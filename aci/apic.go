@@ -75,12 +75,8 @@ func NewClient(host, username, password string) (*Client, error) {
 
 // Login authenticates a new APIC session
 func (c *Client) Login() error {
-	l := LoginJSON{
-		AAAUser: AAAUser{
-			Attributes: Attributes{
-				Name: c.Username,
-				Pwd:  c.Password,
-			}}}
+	a := Attributes{Name: c.Username, Pwd: c.Password}
+	l := LoginJSON{AAAUser: AAAUser{Attributes: a}}
 	loginURL := c.Host.Path + loginPath
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(l)
