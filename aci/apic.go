@@ -84,5 +84,5 @@ func (c *Client) Login() error {
 	// get auth cookie
 	// TODO check cookie name?
 	apicCookie := resp.Cookies()[0]
-	c.Cookie = apicCookie.Value
+	c.Cookie = apicCookie.String()
 }
