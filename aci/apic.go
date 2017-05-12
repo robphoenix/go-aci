@@ -1,10 +1,10 @@
-package main
+package aci
 
 import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -49,40 +49,52 @@ type Client struct {
 
 // LoginJSON represents the JSON needed for authentication
 type LoginJSON struct {
-	AAAUser struct {
-		Attributes struct {
-			Name string `json:"name"`
-			Pwd  string `json:"pwd"`
-		} `json:"attributes"`
-	} `json:"aaaUser"`
+	AAAUser `json:"aaaUser"`
+}
+
+// AAAUser ...
+type AAAUser struct {
+	Attributes `json:"attributes"`
+}
+
+// Attributes ...
+type Attributes struct {
+	Name string `json:"name"`
+	Pwd  string `json:"pwd"`
 }
 
 // NewClient instantiates a new APIC client
-func NewClient(url, username, password string) (*Client, error) {
+func NewClient(host, username, password string) (*Client, error) {
 	return &Client{
-		Host:     &url.URL{Path: url},
+		Host:     &url.URL{Path: host},
 		Username: username,
 		Password: password,
 		Client:   &http.Client{Transport: T},
-	}
+	}, nil
 }
 
 // Login authenticates a new APIC session
 func (c *Client) Login() error {
-	l := LoginJSON{AAAUser{Attributes{
-		Name: c.Username,
-		Pwd:  c.Password,
-	}}}
+	l := LoginJSON{
+		AAAUser: AAAUser{
+			Attributes: Attributes{
+				Name: c.Username,
+				Pwd:  c.Password,
+			}}}
 	loginURL := c.Host.Path + loginPath
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(l)
-	resp, err := http.Post(loginURL, "application/json; charset=utf-8", b)
+	req, err := http.NewRequest("POST", loginURL, b)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.Client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
 	// get auth cookie
 	// TODO check cookie name?
 	apicCookie := resp.Cookies()[0]
 	c.Cookie = apicCookie.String()
+	fmt.Println("response Status:", resp.Status)
+	return nil
 }
