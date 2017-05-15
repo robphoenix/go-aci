@@ -66,7 +66,7 @@ type Attributes struct {
 // NewClient instantiates a new APIC client
 func NewClient(host, username, password string) (*Client, error) {
 	return &Client{
-		Host:     &url.URL{Path: host},
+		Host:     &url.URL{Scheme: "https", Host: host},
 		Username: username,
 		Password: password,
 		Client:   &http.Client{Transport: T},
@@ -77,10 +77,10 @@ func NewClient(host, username, password string) (*Client, error) {
 func (c *Client) Login() error {
 	a := Attributes{Name: c.Username, Pwd: c.Password}
 	l := LoginJSON{AAAUser: AAAUser{Attributes: a}}
-	loginURL := c.Host.Path + loginPath
+	loginURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: loginPath}
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(l)
-	req, err := http.NewRequest("POST", loginURL, b)
+	req, err := http.NewRequest("POST", loginURL.String(), b)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.Client.Do(req)
 	if err != nil {
