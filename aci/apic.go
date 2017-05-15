@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -12,7 +13,11 @@ import (
 )
 
 const (
-	loginPath = "api/aaaLogin.json"
+	create       = "created"
+	modify       = "modified"
+	createModify = "created,modified"
+	delete       = "deleted"
+	loginPath    = "api/aaaLogin.json"
 )
 
 var (
@@ -54,11 +59,11 @@ type LoginJSON struct {
 
 // AAAUser ...
 type AAAUser struct {
-	Attributes `json:"attributes"`
+	loginAttributes `json:"attributes"`
 }
 
 // Attributes ...
-type Attributes struct {
+type loginAttributes struct {
 	Name string `json:"name"`
 	Pwd  string `json:"pwd"`
 }
@@ -75,11 +80,16 @@ func NewClient(host, username, password string) (*Client, error) {
 
 // Login authenticates a new APIC session
 func (c *Client) Login() error {
-	a := Attributes{Name: c.Username, Pwd: c.Password}
-	l := LoginJSON{AAAUser: AAAUser{Attributes: a}}
+	l := LoginJSON{AAAUser: AAAUser{loginAttributes: loginAttributes{
+		Name: c.Username,
+		Pwd:  c.Password,
+	}}}
 	loginURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: loginPath}
 	b := new(bytes.Buffer)
-	json.NewEncoder(b).Encode(l)
+	err := json.NewEncoder(b).Encode(l)
+	if err != nil {
+		log.Fatal(err)
+	}
 	req, err := http.NewRequest("POST", loginURL.String(), b)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.Client.Do(req)
