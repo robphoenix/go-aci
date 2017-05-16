@@ -106,15 +106,24 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	// TODO
+	// this is not what we want to return
+	// this is closing the body, we can't access it in the calling function
+	// we need to pass in an interface to decode the response into
+	// https://medium.com/@marcus.olsson/writing-a-go-client-for-your-restful-api-c193a2f4998c
 	return resp, nil
 }
 
 // Login authenticates a new APIC session
 func (c *Client) Login() error {
-	l := LoginJSON{AAAUser: AAAUser{loginAttributes: loginAttributes{
-		Name: c.Username,
-		Pwd:  c.Password,
-	}}}
+	l := LoginJSON{
+		AAAUser: AAAUser{
+			loginAttributes: loginAttributes{
+				Name: c.Username,
+				Pwd:  c.Password,
+			},
+		},
+	}
 
 	req, err := c.newRequest("POST", loginPath, l)
 	if err != nil {

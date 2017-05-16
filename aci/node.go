@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 )
 
 const (
@@ -108,9 +107,8 @@ func createFNIPolC(ns []Node, action string) FabricNodeIdentPolContainer {
 	return fpol
 }
 
-// AddNodes ...
-func (c *Client) AddNodes(ns []Node) error {
-	fpol := createFNIPolC(ns, create)
+func (c *Client) editNodes(ns []Node, action string) error {
+	fpol := createFNIPolC(ns, action)
 	req, err := c.newRequest("POST", nodesPath, fpol)
 	if err != nil {
 		return err
@@ -127,39 +125,49 @@ func (c *Client) AddNodes(ns []Node) error {
 	return nil
 }
 
+// AddNodes ...
+func (c *Client) AddNodes(ns []Node) error {
+	err := c.editNodes(ns, create)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // DeleteNodes ...
 func (c *Client) DeleteNodes(ns []Node) error {
-	fpol := createFNIPolC(ns, delete)
-	req, err := c.newRequest("POST", nodesPath, fpol)
+	err := c.editNodes(ns, delete)
 	if err != nil {
 		return err
 	}
-
-	resp, err := c.do(req)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("response Status:", resp.Status)
-	nodesBody, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("nodesBody = ", string(nodesBody))
 	return nil
 }
 
 // ListNodes ...
 func (c *Client) ListNodes() ([]Node, error) {
-	req, err := http.NewRequest("GET", c.getURL(listNodesPath), nil)
+	req, err := c.newRequest("GET", listNodesPath, nil)
 	if err != nil {
-		return []Node{}, err
+		return nil, err
 	}
-	req.Header.Set("Cookie", c.Cookie)
-	resp, err := c.httpClient.Do(req)
+
+	resp, err := c.do(req)
 	if err != nil {
-		return []Node{}, err
+		return nil, err
 	}
-	defer resp.Body.Close()
+
+	// req, err := http.NewRequest("GET", c.getURL(listNodesPath), nil)
+	// if err != nil {
+	//         return []Node{}, err
+	// }
+	// req.Header.Set("Cookie", c.Cookie)
+	// resp, err := c.httpClient.Do(req)
+	// if err != nil {
+	//         return []Node{}, err
+	// }
+	// defer resp.Body.Close()
 
 	fmt.Println("response Status:", resp.Status)
+	fmt.Printf("resp.Body = %+v\n", resp.Body)
 	nodesList, _ := ioutil.ReadAll(resp.Body)
 	var n FabricNodes
 	err = json.NewDecoder(bytes.NewReader(nodesList)).Decode(&n)
