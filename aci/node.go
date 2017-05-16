@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	nodesPath = "api/node/mo/uni/controller/nodeidentpol.json"
+	nodesPath     = "api/node/mo/uni/controller/nodeidentpol.json"
+	listNodesPath = "api/node/class/fabricNode.json"
 )
 
 // FabricNodeIdentPolContainer ...
@@ -38,9 +39,10 @@ type FabricNodeIdentP struct {
 type Node struct {
 	Name   string `json:"name,omitempty"`
 	ID     string `json:"nodeId,omitempty"`
-	Role   string `json:"role,omitempty"`
 	Serial string `json:"serial,omitempty"`
 	Status string `json:"status,omitempty"`
+	// Role is provisioned by ACI, we only need it when fetching node info
+	// Role   string `json:"role,omitempty"`
 }
 
 // AddNodes ...
@@ -127,7 +129,7 @@ func (c *Client) DeleteNodes(ns []Node) error {
 
 	fmt.Println("response Status:", resp.Status)
 	nodesBody, _ := ioutil.ReadAll(resp.Body)
-	fmt.Printf("nodesBody = %+v\n", string(nodesBody))
+	fmt.Println("nodesBody = ", string(nodesBody))
 	return nil
 }
 
@@ -172,5 +174,20 @@ func (c *Client) ModifyNodes(ns []Node) error {
 	fmt.Println("response Status:", resp.Status)
 	nodesBody, _ := ioutil.ReadAll(resp.Body)
 	fmt.Printf("nodesBody = %+v\n", string(nodesBody))
+	return nil
+}
+
+func (c *Client) decomissionNode() error {
+	// url := "https://sandboxapicdc.cisco.com/api/node/mo/uni/fabric/outofsvc.json"
+	// {
+	//   "fabricRsDecommissionNode": {
+	//     "attributes": {
+	//       "tDn": "topology/pod-1/node-102",
+	//       "status": "created,modified",
+	//       "removeFromController": "true"
+	//     },
+	//     "children": []
+	//   }
+	// }
 	return nil
 }
