@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 )
 
 const (
@@ -82,15 +81,14 @@ type Attributes struct {
 	Version          string `json:"version,omitempty"`
 }
 
-// AddNodes ...
-func (c *Client) AddNodes(ns []Node) error {
+func createFNIPolC(ns []Node, action string) FabricNodeIdentPolContainer {
 	var children []FabricNodeIdentPContainer
 	for _, n := range ns {
 		a := Attributes{
 			Name:   n.Name,
 			NodeID: n.ID,
 			Serial: n.Serial,
-			Status: create,
+			Status: action,
 		}
 		fp := FabricNodeIdentPContainer{
 			FabricNodeIdentP: FabricNodeIdentP{
@@ -107,23 +105,21 @@ func (c *Client) AddNodes(ns []Node) error {
 			Children: children,
 		},
 	}
-	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(fpol)
+	return fpol
+}
+
+// AddNodes ...
+func (c *Client) AddNodes(ns []Node) error {
+	fpol := createFNIPolC(ns, create)
+	req, err := c.newRequest("POST", nodesPath, fpol)
 	if err != nil {
 		return err
 	}
 
-	nodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: nodesPath}
-	req, err := http.NewRequest("POST", nodesURL.String(), b)
+	resp, err := c.do(req)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Cookie", c.Cookie)
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
 
 	fmt.Println("response Status:", resp.Status)
 	nodesBody, _ := ioutil.ReadAll(resp.Body)
@@ -133,46 +129,16 @@ func (c *Client) AddNodes(ns []Node) error {
 
 // DeleteNodes ...
 func (c *Client) DeleteNodes(ns []Node) error {
-	var children []FabricNodeIdentPContainer
-	for _, n := range ns {
-		a := Attributes{
-			Name:   n.Name,
-			NodeID: n.ID,
-			Serial: n.Serial,
-			Status: delete,
-		}
-		fp := FabricNodeIdentPContainer{
-			FabricNodeIdentP: FabricNodeIdentP{
-				Attributes: a,
-			},
-		}
-		children = append(children, fp)
-	}
-	fpol := FabricNodeIdentPolContainer{
-		FabricNodeIdentPol{
-			Attributes: Attributes{
-				Status: createModify,
-			},
-			Children: children,
-		},
-	}
-	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(fpol)
+	fpol := createFNIPolC(ns, delete)
+	req, err := c.newRequest("POST", nodesPath, fpol)
 	if err != nil {
 		return err
 	}
 
-	nodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: nodesPath}
-	req, err := http.NewRequest("POST", nodesURL.String(), b)
+	resp, err := c.do(req)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Cookie", c.Cookie)
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
 
 	fmt.Println("response Status:", resp.Status)
 	nodesBody, _ := ioutil.ReadAll(resp.Body)
@@ -182,13 +148,12 @@ func (c *Client) DeleteNodes(ns []Node) error {
 
 // ListNodes ...
 func (c *Client) ListNodes() ([]Node, error) {
-	listNodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: listNodesPath}
-	req, err := http.NewRequest("GET", listNodesURL.String(), nil)
+	req, err := http.NewRequest("GET", c.getURL(listNodesPath), nil)
 	if err != nil {
 		return []Node{}, err
 	}
 	req.Header.Set("Cookie", c.Cookie)
-	resp, err := c.Client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return []Node{}, err
 	}

@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"log"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -45,11 +45,11 @@ var (
 
 // Client is
 type Client struct {
-	Host     *url.URL
-	Username string
-	Password string
-	Cookie   string // APIC login token (apicCookie)
-	Client   *http.Client
+	Host       *url.URL
+	Username   string
+	Password   string
+	Cookie     string // APIC login token (apicCookie)
+	httpClient *http.Client
 }
 
 // LoginJSON represents the JSON needed for authentication
@@ -71,11 +71,42 @@ type loginAttributes struct {
 // NewClient instantiates a new APIC client
 func NewClient(host, username, password string) (*Client, error) {
 	return &Client{
-		Host:     &url.URL{Scheme: "https", Host: host},
-		Username: username,
-		Password: password,
-		Client:   &http.Client{Transport: T},
+		Host:       &url.URL{Scheme: "https", Host: host},
+		Username:   username,
+		Password:   password,
+		httpClient: &http.Client{Transport: T},
 	}, nil
+}
+
+func (c *Client) newRequest(method string, path string, body interface{}) (*http.Request, error) {
+	u := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: path}
+
+	var buf io.ReadWriter
+	if body != nil {
+		buf = new(bytes.Buffer)
+		err := json.NewEncoder(buf).Encode(body)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	req, err := http.NewRequest(method, u.String(), buf)
+	if err != nil {
+		return nil, err
+	}
+	if c.Cookie != "" {
+		req.Header.Set("Cookie", c.Cookie)
+	}
+	return req, nil
+}
+
+func (c *Client) do(req *http.Request) (*http.Response, error) {
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return resp, nil
 }
 
 // Login authenticates a new APIC session
@@ -84,19 +115,16 @@ func (c *Client) Login() error {
 		Name: c.Username,
 		Pwd:  c.Password,
 	}}}
-	loginURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: loginPath}
-	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(l)
-	if err != nil {
-		log.Fatal(err)
-	}
-	req, err := http.NewRequest("POST", loginURL.String(), b)
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.Client.Do(req)
+
+	req, err := c.newRequest("POST", loginPath, l)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+
+	resp, err := c.do(req)
+	if err != nil {
+		return err
+	}
 	// get auth cookie
 	// TODO check cookie name?
 	apicCookie := resp.Cookies()[0]
