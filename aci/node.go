@@ -14,6 +14,17 @@ const (
 	listNodesPath = "api/node/class/fabricNode.json"
 )
 
+// Node ...
+type Node struct {
+	FabricStatus string
+	Model        string
+	Name         string
+	ID           string
+	Serial       string
+	Status       string
+	Role         string
+}
+
 // FabricNodeIdentPolContainer ...
 type FabricNodeIdentPolContainer struct {
 	FabricNodeIdentPol `json:"fabricNodeIdentPol"`
@@ -26,27 +37,17 @@ type FabricNodeIdentPContainer struct {
 
 // FabricNodeIdentPol ...
 type FabricNodeIdentPol struct {
-	Node     `json:"attributes"`
-	Children []FabricNodeIdentPContainer `json:"children"`
+	Attributes `json:"attributes"`
+	Children   []FabricNodeIdentPContainer `json:"children"`
 }
 
 // FabricNodeIdentP ...
 type FabricNodeIdentP struct {
-	Node `json:"attributes"`
+	Attributes `json:"attributes"`
 }
 
-// Node ...
-type Node struct {
-	Name   string `json:"name,omitempty"`
-	ID     string `json:"nodeId,omitempty"`
-	Serial string `json:"serial,omitempty"`
-	Status string `json:"status,omitempty"`
-	// Role is provisioned by ACI, we only need it when fetching node info
-	// Role   string `json:"role,omitempty"`
-}
-
-// GetNodes ...
-type GetNodes struct {
+// FabricNodes ...
+type FabricNodes struct {
 	Imdata []struct {
 		FabricNode `json:"fabricNode"`
 	} `json:"imdata"`
@@ -55,11 +56,11 @@ type GetNodes struct {
 
 // FabricNode ...
 type FabricNode struct {
-	FabricNodeAttributes `json:"attributes"`
+	Attributes `json:"attributes"`
 }
 
-// FabricNodeAttributes ...
-type FabricNodeAttributes struct {
+// Attributes ...
+type Attributes struct {
 	Status           string `json:"status,omitempty"`
 	AdSt             string `json:"adSt,omitempty"`
 	ChildAction      string `json:"childAction,omitempty"`
@@ -73,6 +74,7 @@ type FabricNodeAttributes struct {
 	MonPolDn         string `json:"monPolDn,omitempty"`
 	Name             string `json:"name,omitempty"`
 	NameAlias        string `json:"nameAlias,omitempty"`
+	NodeID           string `json:"nodeId,omitempty"`
 	Role             string `json:"role,omitempty"`
 	Serial           string `json:"serial,omitempty"`
 	UID              string `json:"uid,omitempty"`
@@ -83,15 +85,23 @@ type FabricNodeAttributes struct {
 // AddNodes ...
 func (c *Client) AddNodes(ns []Node) error {
 	var children []FabricNodeIdentPContainer
-	// add individual nodes to the nodes struct
 	for _, n := range ns {
-		n.Status = create
-		fp := FabricNodeIdentPContainer{FabricNodeIdentP: FabricNodeIdentP{Node: n}}
+		a := Attributes{
+			Name:   n.Name,
+			NodeID: n.ID,
+			Serial: n.Serial,
+			Status: create,
+		}
+		fp := FabricNodeIdentPContainer{
+			FabricNodeIdentP: FabricNodeIdentP{
+				Attributes: a,
+			},
+		}
 		children = append(children, fp)
 	}
 	fpol := FabricNodeIdentPolContainer{
 		FabricNodeIdentPol{
-			Node: Node{
+			Attributes: Attributes{
 				Status: createModify,
 			},
 			Children: children,
@@ -102,15 +112,12 @@ func (c *Client) AddNodes(ns []Node) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("b = %+v\n", b)
 
-	// nodes endpoint
 	nodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: nodesPath}
 	req, err := http.NewRequest("POST", nodesURL.String(), b)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Cookie", c.Cookie)
 	resp, err := c.Client.Do(req)
 	if err != nil {
@@ -127,15 +134,23 @@ func (c *Client) AddNodes(ns []Node) error {
 // DeleteNodes ...
 func (c *Client) DeleteNodes(ns []Node) error {
 	var children []FabricNodeIdentPContainer
-	// add individual nodes to the nodes struct
 	for _, n := range ns {
-		n.Status = delete
-		fp := FabricNodeIdentPContainer{FabricNodeIdentP: FabricNodeIdentP{Node: n}}
+		a := Attributes{
+			Name:   n.Name,
+			NodeID: n.ID,
+			Serial: n.Serial,
+			Status: delete,
+		}
+		fp := FabricNodeIdentPContainer{
+			FabricNodeIdentP: FabricNodeIdentP{
+				Attributes: a,
+			},
+		}
 		children = append(children, fp)
 	}
 	fpol := FabricNodeIdentPolContainer{
 		FabricNodeIdentPol{
-			Node: Node{
+			Attributes: Attributes{
 				Status: createModify,
 			},
 			Children: children,
@@ -146,15 +161,12 @@ func (c *Client) DeleteNodes(ns []Node) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("b = %+v\n", b)
 
-	// nodes endpoint
 	nodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: nodesPath}
 	req, err := http.NewRequest("POST", nodesURL.String(), b)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Cookie", c.Cookie)
 	resp, err := c.Client.Do(req)
 	if err != nil {
@@ -168,74 +180,45 @@ func (c *Client) DeleteNodes(ns []Node) error {
 	return nil
 }
 
-// ModifyNodes ...
-func (c *Client) ModifyNodes(ns []Node) error {
-	var children []FabricNodeIdentPContainer
-	// add individual nodes to the nodes struct
-	for _, n := range ns {
-		n.Status = modify
-		fp := FabricNodeIdentPContainer{FabricNodeIdentP: FabricNodeIdentP{Node: n}}
-		children = append(children, fp)
-	}
-	fpol := FabricNodeIdentPolContainer{
-		FabricNodeIdentPol{
-			Node: Node{
-				Status: createModify,
-			},
-			Children: children,
-		},
-	}
-	b := new(bytes.Buffer)
-	err := json.NewEncoder(b).Encode(fpol)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("b = %+v\n", b)
-
-	nodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: nodesPath}
-	req, err := http.NewRequest("POST", nodesURL.String(), b)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", c.Cookie)
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("response Status:", resp.Status)
-	nodesBody, _ := ioutil.ReadAll(resp.Body)
-	fmt.Printf("nodesBody = %+v\n", string(nodesBody))
-	return nil
-}
-
 // ListNodes ...
-func (c *Client) ListNodes() (GetNodes, error) {
+func (c *Client) ListNodes() ([]Node, error) {
 	listNodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: listNodesPath}
 	req, err := http.NewRequest("GET", listNodesURL.String(), nil)
 	if err != nil {
-		return GetNodes{}, err
+		return []Node{}, err
 	}
 	req.Header.Set("Cookie", c.Cookie)
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return GetNodes{}, err
+		return []Node{}, err
 	}
 	defer resp.Body.Close()
 
 	fmt.Println("response Status:", resp.Status)
 	nodesList, _ := ioutil.ReadAll(resp.Body)
-	var n GetNodes
+	var n FabricNodes
 	err = json.NewDecoder(bytes.NewReader(nodesList)).Decode(&n)
 	if err != nil {
-		return GetNodes{}, err
+		return []Node{}, err
 	}
-	return n, nil
+	var ns []Node
+	for _, v := range n.Imdata {
+		node := Node{
+			FabricStatus: v.FabricSt,
+			ID:           v.ID,
+			Model:        v.Model,
+			Name:         v.Name,
+			Role:         v.Role,
+			Serial:       v.Serial,
+			Status:       v.Status,
+		}
+		ns = append(ns, node)
+	}
+	return ns, nil
 }
 
 func (c *Client) decomissionNode() error {
+	// https://supportforums.cisco.com/discussion/13296271/decommissioning-fabric-nodes-api
 	// url := "https://sandboxapicdc.cisco.com/api/node/mo/uni/fabric/outofsvc.json"
 	// {
 	//   "fabricRsDecommissionNode": {
