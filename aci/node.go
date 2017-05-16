@@ -45,6 +45,41 @@ type Node struct {
 	// Role   string `json:"role,omitempty"`
 }
 
+// GetNodes ...
+type GetNodes struct {
+	Imdata []struct {
+		FabricNode `json:"fabricNode"`
+	} `json:"imdata"`
+	TotalCount string `json:"totalCount"`
+}
+
+// FabricNode ...
+type FabricNode struct {
+	FabricNodeAttributes `json:"attributes"`
+}
+
+// FabricNodeAttributes ...
+type FabricNodeAttributes struct {
+	Status           string `json:"status,omitempty"`
+	AdSt             string `json:"adSt,omitempty"`
+	ChildAction      string `json:"childAction,omitempty"`
+	DelayedHeartbeat string `json:"delayedHeartbeat,omitempty"`
+	Dn               string `json:"dn,omitempty"`
+	FabricSt         string `json:"fabricSt,omitempty"`
+	ID               string `json:"id,omitempty"`
+	LcOwn            string `json:"lcOwn,omitempty"`
+	ModTs            string `json:"modTs,omitempty"`
+	Model            string `json:"model,omitempty"`
+	MonPolDn         string `json:"monPolDn,omitempty"`
+	Name             string `json:"name,omitempty"`
+	NameAlias        string `json:"nameAlias,omitempty"`
+	Role             string `json:"role,omitempty"`
+	Serial           string `json:"serial,omitempty"`
+	UID              string `json:"uid,omitempty"`
+	Vendor           string `json:"vendor,omitempty"`
+	Version          string `json:"version,omitempty"`
+}
+
 // AddNodes ...
 func (c *Client) AddNodes(ns []Node) error {
 	var children []FabricNodeIdentPContainer
@@ -157,7 +192,6 @@ func (c *Client) ModifyNodes(ns []Node) error {
 	}
 	fmt.Printf("b = %+v\n", b)
 
-	// nodes endpoint
 	nodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: nodesPath}
 	req, err := http.NewRequest("POST", nodesURL.String(), b)
 	if err != nil {
@@ -175,6 +209,30 @@ func (c *Client) ModifyNodes(ns []Node) error {
 	nodesBody, _ := ioutil.ReadAll(resp.Body)
 	fmt.Printf("nodesBody = %+v\n", string(nodesBody))
 	return nil
+}
+
+// ListNodes ...
+func (c *Client) ListNodes() (GetNodes, error) {
+	listNodesURL := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: listNodesPath}
+	req, err := http.NewRequest("GET", listNodesURL.String(), nil)
+	if err != nil {
+		return GetNodes{}, err
+	}
+	req.Header.Set("Cookie", c.Cookie)
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return GetNodes{}, err
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	nodesList, _ := ioutil.ReadAll(resp.Body)
+	var n GetNodes
+	err = json.NewDecoder(bytes.NewReader(nodesList)).Decode(&n)
+	if err != nil {
+		return GetNodes{}, err
+	}
+	return n, nil
 }
 
 func (c *Client) decomissionNode() error {
