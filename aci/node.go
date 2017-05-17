@@ -1,10 +1,7 @@
 package aci
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 )
 
 const (
@@ -35,13 +32,13 @@ type FabricNodeIdentPContainer struct {
 
 // FabricNodeIdentPol ...
 type FabricNodeIdentPol struct {
-	Attributes `json:"attributes"`
-	Children   []FabricNodeIdentPContainer `json:"children"`
+	NodeAttributes `json:"attributes"`
+	Children       []FabricNodeIdentPContainer `json:"children"`
 }
 
 // FabricNodeIdentP ...
 type FabricNodeIdentP struct {
-	Attributes `json:"attributes"`
+	NodeAttributes `json:"attributes"`
 }
 
 // FabricNodes ...
@@ -54,11 +51,17 @@ type FabricNodes struct {
 
 // FabricNode ...
 type FabricNode struct {
-	Attributes `json:"attributes"`
+	NodeAttributes `json:"attributes"`
 }
 
-// Attributes ...
-type Attributes struct {
+// nodeResponse
+type nodeResponse struct {
+	Imdata     []interface{} `json:"imdata"`
+	TotalCount string        `json:"totalCount"`
+}
+
+// NodeAttributes ...
+type NodeAttributes struct {
 	Status           string `json:"status,omitempty"`
 	AdSt             string `json:"adSt,omitempty"`
 	ChildAction      string `json:"childAction,omitempty"`
@@ -83,7 +86,7 @@ type Attributes struct {
 func createFNIPolC(ns []Node, action string) FabricNodeIdentPolContainer {
 	var children []FabricNodeIdentPContainer
 	for _, n := range ns {
-		a := Attributes{
+		a := NodeAttributes{
 			Name:   n.Name,
 			NodeID: n.ID,
 			Serial: n.Serial,
@@ -91,14 +94,14 @@ func createFNIPolC(ns []Node, action string) FabricNodeIdentPolContainer {
 		}
 		fp := FabricNodeIdentPContainer{
 			FabricNodeIdentP: FabricNodeIdentP{
-				Attributes: a,
+				NodeAttributes: a,
 			},
 		}
 		children = append(children, fp)
 	}
 	fpol := FabricNodeIdentPolContainer{
 		FabricNodeIdentPol{
-			Attributes: Attributes{
+			NodeAttributes: NodeAttributes{
 				Status: createModify,
 			},
 			Children: children,
@@ -114,14 +117,13 @@ func (c *Client) editNodes(ns []Node, action string) error {
 		return err
 	}
 
-	resp, err := c.do(req)
+	var f nodeResponse
+
+	resp, err := c.do(req, &f)
 	if err != nil {
 		return err
 	}
-
 	fmt.Println("response Status:", resp.Status)
-	nodesBody, _ := ioutil.ReadAll(resp.Body)
-	fmt.Printf("nodesBody = %+v\n", string(nodesBody))
 	return nil
 }
 
@@ -150,30 +152,13 @@ func (c *Client) ListNodes() ([]Node, error) {
 		return nil, err
 	}
 
-	resp, err := c.do(req)
+	var n FabricNodes
+	resp, err := c.do(req, &n)
 	if err != nil {
 		return nil, err
 	}
 
-	// req, err := http.NewRequest("GET", c.getURL(listNodesPath), nil)
-	// if err != nil {
-	//         return []Node{}, err
-	// }
-	// req.Header.Set("Cookie", c.Cookie)
-	// resp, err := c.httpClient.Do(req)
-	// if err != nil {
-	//         return []Node{}, err
-	// }
-	// defer resp.Body.Close()
-
 	fmt.Println("response Status:", resp.Status)
-	fmt.Printf("resp.Body = %+v\n", resp.Body)
-	nodesList, _ := ioutil.ReadAll(resp.Body)
-	var n FabricNodes
-	err = json.NewDecoder(bytes.NewReader(nodesList)).Decode(&n)
-	if err != nil {
-		return []Node{}, err
-	}
 	var ns []Node
 	for _, v := range n.Imdata {
 		node := Node{
