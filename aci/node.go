@@ -109,20 +109,20 @@ func (c *Client) editNodes(ns []Node, action string) error {
 	fpol := buildFabricNodeContainer(ns, action)
 	req, err := c.newRequest("POST", nodesPath, fpol)
 	if err != nil {
-		return fmt.Errorf("edit nodes: %v", err)
+		return err
 	}
 
 	var f FabricNodes
 
 	_, err = c.do(req, &f)
-	return fmt.Errorf("edit nodes: %v", err)
+	return err
 }
 
 // AddNodes adds a slice of nodes to the ACI fabric memebership
 func (c *Client) AddNodes(ns []Node) error {
 	err := c.editNodes(ns, create)
 	if err != nil {
-		return fmt.Errorf("add nodes: %v", err)
+		return err
 	}
 	return nil
 }
@@ -131,7 +131,16 @@ func (c *Client) AddNodes(ns []Node) error {
 func (c *Client) DeleteNodes(ns []Node) error {
 	err := c.editNodes(ns, delete)
 	if err != nil {
-		return fmt.Errorf("delete nodes: %v", err)
+		return err
+	}
+	return nil
+}
+
+// ModifyNodes modifies a slice of nodes in the ACI fabric membership
+func (c *Client) ModifyNodes(ns []Node) error {
+	err := c.editNodes(ns, modify)
+	if err != nil {
+		return err
 	}
 	return nil
 }
