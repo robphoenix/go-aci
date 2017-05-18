@@ -43,33 +43,37 @@ var (
 	}
 )
 
-// Client is
+// Client manages communication with the APIC API
 type Client struct {
 	Host       *url.URL
 	Username   string
 	Password   string
-	Cookie     string // APIC login token (apicCookie)
+	Cookie     string
 	httpClient *http.Client
 }
 
-// LoginRequest represents the JSON needed for authentication
+// LoginRequest is the JSON request for
+// authenticating with APIC
 type LoginRequest struct {
 	AAA `json:"aaaUser"`
 }
 
-// LoginResponse ...
+// LoginResponse is the JSON response from
+// authenticating with APIC
 type LoginResponse struct {
 	Imdata []struct {
 		AAA `json:"aaaLogin"`
 	} `json:"imdata"`
 }
 
-// AAA ...
+// AAA is part of the authentication process
+// that holds authentication attributes
 type AAA struct {
 	loginAttributes `json:"attributes"`
 }
 
-// Attributes ...
+// loginAttributes is the attributes of the APIC
+// authentication request and response
 type loginAttributes struct {
 	Name                   string `json:"name,omitempty"`
 	Pwd                    string `json:"pwd,omitempty"`
@@ -97,6 +101,7 @@ func NewClient(host, username, password string) (*Client, error) {
 	}, nil
 }
 
+// newRequest forms an http request for use with an APIC client
 func (c *Client) newRequest(method string, path string, body interface{}) (*http.Request, error) {
 	u := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: path}
 
@@ -119,6 +124,7 @@ func (c *Client) newRequest(method string, path string, body interface{}) (*http
 	return req, nil
 }
 
+// do performs APIC client http requests
 func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
