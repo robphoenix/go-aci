@@ -52,15 +52,15 @@ type Client struct {
 	httpClient *http.Client
 }
 
-// LoginRequest is the JSON request for
+// loginRequest is the JSON request for
 // authenticating with APIC
-type LoginRequest struct {
+type loginRequest struct {
 	AAA `json:"aaaUser"`
 }
 
-// LoginResponse is the JSON response from
+// loginResponse is the JSON response from
 // authenticating with APIC
-type LoginResponse struct {
+type loginResponse struct {
 	Imdata []struct {
 		AAA `json:"aaaLogin"`
 	} `json:"imdata"`
@@ -141,7 +141,7 @@ func (c *Client) Login() error {
 		Name: c.Username,
 		Pwd:  c.Password,
 	}
-	l := LoginRequest{AAA: AAA{
+	l := loginRequest{AAA: AAA{
 		loginAttributes: a,
 	}}
 	req, err := c.newRequest("POST", loginPath, l)
@@ -149,7 +149,7 @@ func (c *Client) Login() error {
 		return err
 	}
 
-	var lr LoginResponse
+	var lr loginResponse
 	resp, err := c.do(req, &lr)
 	if err != nil {
 		return err
