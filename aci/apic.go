@@ -116,7 +116,7 @@ func (c *Client) newRequest(method string, path string, body interface{}) (*http
 
 	req, err := http.NewRequest(method, u.String(), buf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s request to %s : %v", method, url, err)
 	}
 	if c.Cookie != "" {
 		req.Header.Set("Cookie", c.Cookie)
@@ -128,7 +128,12 @@ func (c *Client) newRequest(method string, path string, body interface{}) (*http
 func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf(
+			"%s response with %s request from %s : %v",
+			resp.Status,
+			req.Method,
+			req.URL.String(),
+			err)
 	}
 	defer resp.Body.Close()
 	err = json.NewDecoder(resp.Body).Decode(v)
@@ -146,13 +151,13 @@ func (c *Client) Login() error {
 	}}
 	req, err := c.newRequest("POST", loginPath, l)
 	if err != nil {
-		return err
+		return fmt.Errorf("login for %s: %v", a.UserName, err)
 	}
 
 	var lr loginResponse
 	resp, err := c.do(req, &lr)
 	if err != nil {
-		return err
+		return fmt.Errorf("login for %s: %v", a.UserName, err)
 	}
 	// get auth cookie
 	// TODO check cookie name?
