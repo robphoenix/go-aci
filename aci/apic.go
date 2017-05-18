@@ -116,7 +116,7 @@ func (c *Client) newRequest(method string, path string, body interface{}) (*http
 
 	req, err := http.NewRequest(method, u.String(), buf)
 	if err != nil {
-		return nil, fmt.Errorf("%s request to %s : %v", method, url, err)
+		return nil, fmt.Errorf("%s request to %s : %v", method, u.String(), err)
 	}
 	if c.Cookie != "" {
 		req.Header.Set("Cookie", c.Cookie)
@@ -163,6 +163,5 @@ func (c *Client) Login() error {
 	// TODO check cookie name?
 	apicCookie := resp.Cookies()[0]
 	c.Cookie = apicCookie.String()
-	fmt.Println("response Status:", resp.Status)
 	return nil
 }

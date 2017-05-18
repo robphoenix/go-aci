@@ -114,11 +114,8 @@ func (c *Client) editNodes(ns []Node, action string) error {
 
 	var f FabricNodes
 
-	resp, err := c.do(req, &f)
-	if err != nil {
-		return fmt.Errorf("edit nodes: %v", err)
-	}
-	return nil
+	_, err = c.do(req, &f)
+	return fmt.Errorf("edit nodes: %v", err)
 }
 
 // AddNodes adds a slice of nodes to the ACI fabric memebership
@@ -147,7 +144,7 @@ func (c *Client) ListNodes() ([]Node, error) {
 	}
 
 	var n FabricNodes
-	resp, err := c.do(req, &n)
+	_, err = c.do(req, &n)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
