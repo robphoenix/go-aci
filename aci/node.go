@@ -9,7 +9,7 @@ const (
 	listNodesPath = "api/node/class/fabricNode.json"
 )
 
-// Node ...
+// Node is a member of an ACI fabric
 type Node struct {
 	FabricStatus string
 	Model        string
@@ -20,47 +20,40 @@ type Node struct {
 	Role         string
 }
 
-// FabricNodeIdentPolContainer ...
+// FabricNodeIdentPolContainer is a container for a FabricNodeIdentPol
 type FabricNodeIdentPolContainer struct {
 	FabricNodeIdentPol `json:"fabricNodeIdentPol"`
 }
 
-// FabricNodeIdentPContainer ...
-type FabricNodeIdentPContainer struct {
-	FabricNodeIdentP `json:"fabricNodeIdentP"`
-}
-
-// FabricNodeIdentPol ...
+// FabricNodeIdentPol is a container for an ACI node identity profile
 type FabricNodeIdentPol struct {
 	NodeAttributes `json:"attributes"`
 	Children       []FabricNodeIdentPContainer `json:"children"`
 }
 
-// FabricNodeIdentP ...
+// FabricNodeIdentPContainer is a container for a FabricNodeIdentP
+type FabricNodeIdentPContainer struct {
+	FabricNodeIdentP `json:"fabricNodeIdentP"`
+}
+
+// FabricNodeIdentP is the node identity profile,
+// that assigns IDs to the fabric nodes
 type FabricNodeIdentP struct {
 	NodeAttributes `json:"attributes"`
 }
 
-// FabricNodes ...
+// FabricNodes contains is the response body for requests
+// about current ACI fabric nodes
 type FabricNodes struct {
-	Imdata []struct {
-		FabricNode `json:"fabricNode"`
-	} `json:"imdata"`
-	TotalCount string `json:"totalCount"`
+	Imdata []Imdata `json:"imdata"`
 }
 
-// FabricNode ...
-type FabricNode struct {
-	NodeAttributes `json:"attributes"`
+// Imdata is a container for the response structure
+type Imdata struct {
+	FabricNodeIdentP `json:"fabricNode"`
 }
 
-// nodeResponse
-type nodeResponse struct {
-	Imdata     []interface{} `json:"imdata"`
-	TotalCount string        `json:"totalCount"`
-}
-
-// NodeAttributes ...
+// NodeAttributes contains all the attributes of an ACI fabric node
 type NodeAttributes struct {
 	Status           string `json:"status,omitempty"`
 	AdSt             string `json:"adSt,omitempty"`
@@ -84,7 +77,7 @@ type NodeAttributes struct {
 }
 
 func createFNIPolC(ns []Node, action string) FabricNodeIdentPolContainer {
-	var children []FabricNodeIdentPContainer
+	var c []FabricNodeIdentPContainer
 	for _, n := range ns {
 		a := NodeAttributes{
 			Name:   n.Name,
@@ -97,14 +90,14 @@ func createFNIPolC(ns []Node, action string) FabricNodeIdentPolContainer {
 				NodeAttributes: a,
 			},
 		}
-		children = append(children, fp)
+		c = append(c, fp)
 	}
 	fpol := FabricNodeIdentPolContainer{
 		FabricNodeIdentPol{
 			NodeAttributes: NodeAttributes{
 				Status: createModify,
 			},
-			Children: children,
+			Children: c,
 		},
 	}
 	return fpol
@@ -117,7 +110,7 @@ func (c *Client) editNodes(ns []Node, action string) error {
 		return err
 	}
 
-	var f nodeResponse
+	var f FabricNodes
 
 	resp, err := c.do(req, &f)
 	if err != nil {
