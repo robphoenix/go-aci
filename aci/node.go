@@ -76,7 +76,7 @@ type NodeAttributes struct {
 	Version          string `json:"version,omitempty"`
 }
 
-func createFNIPolC(ns []Node, action string) FabricNodeIdentPolContainer {
+func buildFabricNodeContainer(ns []Node, action string) FabricNodeIdentPolContainer {
 	var c []FabricNodeIdentPContainer
 	for _, n := range ns {
 		a := NodeAttributes{
@@ -103,55 +103,55 @@ func createFNIPolC(ns []Node, action string) FabricNodeIdentPolContainer {
 	return fpol
 }
 
+// editNodes takes a create/modify/delete action and performs the
+// necessary API request
 func (c *Client) editNodes(ns []Node, action string) error {
-	fpol := createFNIPolC(ns, action)
+	fpol := buildFabricNodeContainer(ns, action)
 	req, err := c.newRequest("POST", nodesPath, fpol)
 	if err != nil {
-		return err
+		return fmt.Errorf("edit nodes: %v", err)
 	}
 
 	var f FabricNodes
 
 	resp, err := c.do(req, &f)
 	if err != nil {
-		return err
+		return fmt.Errorf("edit nodes: %v", err)
 	}
-	fmt.Println("response Status:", resp.Status)
 	return nil
 }
 
-// AddNodes ...
+// AddNodes adds a slice of nodes to the ACI fabric memebership
 func (c *Client) AddNodes(ns []Node) error {
 	err := c.editNodes(ns, create)
 	if err != nil {
-		return err
+		return fmt.Errorf("add nodes: %v", err)
 	}
 	return nil
 }
 
-// DeleteNodes ...
+// DeleteNodes deletes a slice of nodes from the ACI fabric membership
 func (c *Client) DeleteNodes(ns []Node) error {
 	err := c.editNodes(ns, delete)
 	if err != nil {
-		return err
+		return fmt.Errorf("delete nodes: %v", err)
 	}
 	return nil
 }
 
-// ListNodes ...
+// ListNodes lists all node members of the ACI fabric
 func (c *Client) ListNodes() ([]Node, error) {
 	req, err := c.newRequest("GET", listNodesPath, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list nodes: %v", err)
 	}
 
 	var n FabricNodes
 	resp, err := c.do(req, &n)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list nodes: %v", err)
 	}
 
-	fmt.Println("response Status:", resp.Status)
 	var ns []Node
 	for _, v := range n.Imdata {
 		node := Node{
