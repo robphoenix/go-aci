@@ -56,14 +56,6 @@ type loginRequest struct {
 	AAA `json:"aaaUser"`
 }
 
-// loginResponse is the JSON response from
-// authenticating with APIC
-type loginResponse struct {
-	Imdata []struct {
-		AAA `json:"aaaLogin"`
-	} `json:"imdata"`
-}
-
 // AAA is part of the authentication process
 // that holds authentication attributes
 type AAA struct {
@@ -140,22 +132,18 @@ func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
 
 // Login authenticates a new APIC session
 func (c *Client) Login() error {
-	a := loginAttributes{
-		Name: c.Username,
-		Pwd:  c.Password,
-	}
-	l := loginRequest{AAA: AAA{
-		loginAttributes: a,
-	}}
-	req, err := c.newRequest("POST", loginPath, l)
+	var lr loginRequest
+	lr.Name = c.Username
+	lr.Pwd = c.Password
+	req, err := c.newRequest("POST", loginPath, lr)
 	if err != nil {
-		return fmt.Errorf("login for %s: %v", a.UserName, err)
+		return fmt.Errorf("login for %s: %v", lr.Name, err)
 	}
 
-	var lr loginResponse
-	resp, err := c.do(req, &lr)
+	var la loginAttributes
+	resp, err := c.do(req, &la)
 	if err != nil {
-		return fmt.Errorf("login for %s: %v", a.UserName, err)
+		return fmt.Errorf("login for %s: %v", lr.Name, err)
 	}
 	// get auth cookie
 	// TODO check cookie name?
