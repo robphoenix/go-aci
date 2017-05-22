@@ -94,7 +94,7 @@ func buildFabricNodeContainer(ns []Node, action string) FabricNodeIdentPolContai
 
 // editNodes takes a createModify or delete action and performs the
 // necessary API request
-func (c *Client) editNodes(ns []Node, action string) error {
+func editNodes(c *Client, ns []Node, action string) error {
 	fpol := buildFabricNodeContainer(ns, action)
 	req, err := c.newRequest("POST", nodesPath, fpol)
 	if err != nil {
@@ -108,8 +108,8 @@ func (c *Client) editNodes(ns []Node, action string) error {
 }
 
 // AddNodes adds a slice of nodes to the ACI fabric memebership
-func (c *Client) AddNodes(ns []Node) error {
-	err := c.editNodes(ns, createModify)
+func AddNodes(c *Client, ns []Node) error {
+	err := editNodes(c, ns, createModify)
 	if err != nil {
 		return err
 	}
@@ -117,8 +117,8 @@ func (c *Client) AddNodes(ns []Node) error {
 }
 
 // DeleteNodes deletes a slice of nodes from the ACI fabric membership
-func (c *Client) DeleteNodes(ns []Node) error {
-	err := c.editNodes(ns, delete)
+func DeleteNodes(c *Client, ns []Node) error {
+	err := editNodes(c, ns, delete)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (c *Client) DeleteNodes(ns []Node) error {
 }
 
 // ListNodes lists all node members of the ACI fabric
-func (c *Client) ListNodes() ([]Node, error) {
+func ListNodes(c *Client) ([]Node, error) {
 	req, err := c.newRequest("GET", listNodesPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)

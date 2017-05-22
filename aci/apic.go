@@ -84,10 +84,13 @@ type loginAttributes struct {
 // NewClient instantiates a new APIC client
 func NewClient(host, username, password string) (*Client, error) {
 	return &Client{
-		Host:       &url.URL{Scheme: "https", Host: host},
-		Username:   username,
-		Password:   password,
-		httpClient: &http.Client{Transport: T},
+		Host:     &url.URL{Scheme: "https", Host: host},
+		Username: username,
+		Password: password,
+		httpClient: &http.Client{
+			Transport: T,
+			Timeout:   15 * time.Second,
+		},
 	}, nil
 }
 
@@ -131,6 +134,7 @@ func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
 }
 
 // Login authenticates a new APIC session
+// adding the apicCookie to the client
 func (c *Client) Login() error {
 	var lr loginRequest
 	lr.Name = c.Username
