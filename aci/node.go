@@ -2,6 +2,7 @@ package aci
 
 import (
 	"fmt"
+	"net/http"
 )
 
 const (
@@ -96,7 +97,7 @@ func buildFabricNodeContainer(ns []Node, action string) FabricNodeIdentPolContai
 // necessary API request
 func editNodes(c *Client, ns []Node, action string) error {
 	fpol := buildFabricNodeContainer(ns, action)
-	req, err := c.newRequest("POST", nodesPath, fpol)
+	req, err := c.newRequest(http.MethodPost, nodesPath, fpol)
 	if err != nil {
 		return err
 	}
@@ -127,7 +128,7 @@ func DeleteNodes(c *Client, ns []Node) error {
 
 // ListNodes lists all node members of the ACI fabric
 func ListNodes(c *Client) ([]Node, error) {
-	req, err := c.newRequest("GET", listNodesPath, nil)
+	req, err := c.newRequest(http.MethodGet, listNodesPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}

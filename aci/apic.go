@@ -139,7 +139,7 @@ func (c *Client) Login() error {
 	var lr loginRequest
 	lr.Name = c.Username
 	lr.Pwd = c.Password
-	req, err := c.newRequest("POST", loginPath, lr)
+	req, err := c.newRequest(http.MethodPost, loginPath, lr)
 	if err != nil {
 		return fmt.Errorf("login for %s: %v", lr.Name, err)
 	}
