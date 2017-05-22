@@ -92,7 +92,7 @@ func buildFabricNodeContainer(ns []Node, action string) FabricNodeIdentPolContai
 		}
 		c = append(c, fp)
 	}
-	fpol := FabricNodeIdentPolContainer{
+	f := FabricNodeIdentPolContainer{
 		FabricNodeIdentPol{
 			NodeAttributes: NodeAttributes{
 				Status: createModify,
@@ -100,10 +100,10 @@ func buildFabricNodeContainer(ns []Node, action string) FabricNodeIdentPolContai
 			Children: c,
 		},
 	}
-	return fpol
+	return f
 }
 
-// editNodes takes a create/modify/delete action and performs the
+// editNodes takes a createModify or delete action and performs the
 // necessary API request
 func (c *Client) editNodes(ns []Node, action string) error {
 	fpol := buildFabricNodeContainer(ns, action)
@@ -120,7 +120,7 @@ func (c *Client) editNodes(ns []Node, action string) error {
 
 // AddNodes adds a slice of nodes to the ACI fabric memebership
 func (c *Client) AddNodes(ns []Node) error {
-	err := c.editNodes(ns, create)
+	err := c.editNodes(ns, createModify)
 	if err != nil {
 		return err
 	}
@@ -130,15 +130,6 @@ func (c *Client) AddNodes(ns []Node) error {
 // DeleteNodes deletes a slice of nodes from the ACI fabric membership
 func (c *Client) DeleteNodes(ns []Node) error {
 	err := c.editNodes(ns, delete)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// ModifyNodes modifies a slice of nodes in the ACI fabric membership
-func (c *Client) ModifyNodes(ns []Node) error {
-	err := c.editNodes(ns, modify)
 	if err != nil {
 		return err
 	}
@@ -160,16 +151,18 @@ func (c *Client) ListNodes() ([]Node, error) {
 
 	var ns []Node
 	for _, v := range n.Imdata {
-		node := Node{
-			FabricStatus: v.FabricSt,
-			ID:           v.ID,
-			Model:        v.Model,
-			Name:         v.Name,
-			Role:         v.Role,
-			Serial:       v.Serial,
-			Status:       v.Status,
+		if v.Role != "controller" {
+			node := Node{
+				FabricStatus: v.FabricSt,
+				ID:           v.ID,
+				Model:        v.Model,
+				Name:         v.Name,
+				Role:         v.Role,
+				Serial:       v.Serial,
+				Status:       v.Status,
+			}
+			ns = append(ns, node)
 		}
-		ns = append(ns, node)
 	}
 	return ns, nil
 }

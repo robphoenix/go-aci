@@ -13,8 +13,6 @@ import (
 )
 
 const (
-	create       = "created"
-	modify       = "modified"
 	createModify = "created,modified"
 	delete       = "deleted"
 	loginPath    = "api/aaaLogin.json"
