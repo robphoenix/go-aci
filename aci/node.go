@@ -79,28 +79,17 @@ type NodeAttributes struct {
 func buildFabricNodeContainer(ns []Node, action string) FabricNodeIdentPolContainer {
 	var c []FabricNodeIdentPContainer
 	for _, n := range ns {
-		a := NodeAttributes{
-			Name:   n.Name,
-			NodeID: n.ID,
-			Serial: n.Serial,
-			Status: action,
-		}
-		fp := FabricNodeIdentPContainer{
-			FabricNodeIdentP: FabricNodeIdentP{
-				NodeAttributes: a,
-			},
-		}
+		var fp FabricNodeIdentPContainer
+		fp.Name = n.Name
+		fp.NodeID = n.ID
+		fp.Serial = n.Serial
+		fp.Status = action
 		c = append(c, fp)
 	}
-	f := FabricNodeIdentPolContainer{
-		FabricNodeIdentPol{
-			NodeAttributes: NodeAttributes{
-				Status: createModify,
-			},
-			Children: c,
-		},
-	}
-	return f
+	var fpc FabricNodeIdentPolContainer
+	fpc.Status = createModify
+	fpc.Children = c
+	return fpc
 }
 
 // editNodes takes a createModify or delete action and performs the
