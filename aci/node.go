@@ -46,11 +46,11 @@ type FabricNodeIdentP struct {
 // FabricNodes contains is the response body for requests
 // about current ACI fabric nodes
 type FabricNodes struct {
-	Imdata []Imdata `json:"imdata"`
+	NodesImdata []NodesImdata `json:"imdata"`
 }
 
-// Imdata is a container for the response structure
-type Imdata struct {
+// NodesImdata is a container for the response structure
+type NodesImdata struct {
 	FabricNodeIdentP `json:"fabricNode"`
 }
 
@@ -140,7 +140,7 @@ func ListNodes(c *Client) ([]Node, error) {
 	}
 
 	var ns []Node
-	for _, v := range n.Imdata {
+	for _, v := range n.NodesImdata {
 		if v.Role != "controller" {
 			node := Node{
 				FabricStatus: v.FabricSt,
