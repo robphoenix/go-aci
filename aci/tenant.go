@@ -70,8 +70,8 @@ func editTenant(c *Client, t Tenant, action string) error {
 	return err
 }
 
-// AddTenant adds a slice of nodes to the ACI fabric memebership
-func AddTenant(c *Client, t Tenant) error {
+// CreateTenant adds a slice of nodes to the ACI fabric memebership
+func CreateTenant(c *Client, t Tenant) error {
 	err := editTenant(c, t, createModify)
 	if err != nil {
 		return err

@@ -108,8 +108,8 @@ func editNodes(c *Client, ns []Node, action string) error {
 	return err
 }
 
-// AddNodes adds a slice of nodes to the ACI fabric memebership
-func AddNodes(c *Client, ns []Node) error {
+// CreateNodes adds a slice of nodes to the ACI fabric memebership
+func CreateNodes(c *Client, ns []Node) error {
 	err := editNodes(c, ns, createModify)
 	if err != nil {
 		return err
