@@ -10,34 +10,18 @@ const (
 	listTenantsPath = "/api/node/class/fvTenant.json"
 )
 
-// tenantContainer contains the data structure needed
-// to create a tenant
-type tenantContainer struct {
-	FvTenant `json:"fvTenant"`
-}
-
-// Tenant describes a tenant
-type Tenant struct {
-	Name string
-}
-
 // Tenants ...
 type Tenants struct {
-	TenantsImdata []TenantsImdata `json:"imdata"`
+	TenantsData []TenantsData `json:"imdata"`
 }
 
-// TenantsImdata ...
-type TenantsImdata struct {
-	FvTenant `json:"fvTenant"`
+// TenantsData ...
+type TenantsData struct {
+	Tenant `json:"fvTenant"`
 }
 
-// TenantPayload is the data structure used to create a tenant
-type TenantPayload struct {
-	FvTenant `json:"fvTenant"`
-}
-
-// FvTenant ...
-type FvTenant struct {
+// Tenant ...
+type Tenant struct {
 	TenantAttributes `json:"attributes"`
 }
 
@@ -60,15 +44,15 @@ type TenantAttributes struct {
 
 // editTenant takes a createModify or delete action and performs the
 // necessary API request
-func editTenant(c *Client, t Tenant, action string) error {
-	tp := TenantPayload{}
-	tp.Dn = "uni/tn-" + t.Name
-	tp.Name = t.Name
-	tp.Rn = "tn-" + t.Name
-	tp.Status = action
+func editTenant(c *Client, tenant string, action string) error {
+	td := TenantsData{}
+	td.Dn = "uni/tn-" + tenant
+	td.Name = tenant
+	td.Rn = "tn-" + tenant
+	td.Status = action
 
-	p := fmt.Sprintf(tenantsPath, t.Name)
-	req, err := c.newRequest(http.MethodPost, p, tp)
+	p := fmt.Sprintf(tenantsPath, tenant)
+	req, err := c.newRequest(http.MethodPost, p, td)
 	if err != nil {
 		return err
 	}
@@ -80,8 +64,8 @@ func editTenant(c *Client, t Tenant, action string) error {
 }
 
 // CreateTenant adds a slice of nodes to the ACI fabric memebership
-func CreateTenant(c *Client, t Tenant) error {
-	err := editTenant(c, t, createModify)
+func CreateTenant(c *Client, tenant string) error {
+	err := editTenant(c, tenant, createModify)
 	if err != nil {
 		return err
 	}
@@ -89,8 +73,8 @@ func CreateTenant(c *Client, t Tenant) error {
 }
 
 // DeleteTenant adds a slice of nodes to the ACI fabric memebership
-func DeleteTenant(c *Client, t Tenant) error {
-	err := editTenant(c, t, delete)
+func DeleteTenant(c *Client, tenant string) error {
+	err := editTenant(c, tenant, delete)
 	if err != nil {
 		return err
 	}
@@ -111,8 +95,8 @@ func ListTenants(c *Client) ([]Tenant, error) {
 	}
 
 	var tenants []Tenant
-	for _, t := range ts.TenantsImdata {
-		tenants = append(tenants, Tenant{Name: t.Name})
+	for _, td := range ts.TenantsData {
+		tenants = append(tenants, td.Tenant)
 	}
 	return tenants, nil
 }
