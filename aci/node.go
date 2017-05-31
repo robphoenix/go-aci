@@ -141,18 +141,16 @@ func ListNodes(c *Client) ([]Node, error) {
 
 	var ns []Node
 	for _, v := range n.NodesImdata {
-		if v.Role != "controller" {
-			node := Node{
-				FabricStatus: v.FabricSt,
-				ID:           v.ID,
-				Model:        v.Model,
-				Name:         v.Name,
-				Role:         v.Role,
-				Serial:       v.Serial,
-				Status:       v.Status,
-			}
-			ns = append(ns, node)
+		node := Node{
+			FabricStatus: v.FabricSt,
+			ID:           v.ID,
+			Model:        v.Model,
+			Name:         v.Name,
+			Role:         v.Role,
+			Serial:       v.Serial,
+			Status:       v.Status,
 		}
+		ns = append(ns, node)
 	}
 	return ns, nil
 }
