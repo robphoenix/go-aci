@@ -10,6 +10,11 @@ const (
 	listTenantsPath = "/api/node/class/fvTenant.json"
 )
 
+// Tenant ...
+type Tenant struct {
+	Name string
+}
+
 // Tenants ...
 type Tenants struct {
 	TenantsData []TenantsData `json:"imdata"`
@@ -17,11 +22,11 @@ type Tenants struct {
 
 // TenantsData ...
 type TenantsData struct {
-	Tenant `json:"fvTenant"`
+	FvTenant `json:"fvTenant"`
 }
 
-// Tenant ...
-type Tenant struct {
+// FvTenant ...
+type FvTenant struct {
 	TenantAttributes `json:"attributes"`
 }
 
@@ -44,11 +49,11 @@ type TenantAttributes struct {
 
 // editTenant takes a createModify or delete action and performs the
 // necessary API request
-func editTenant(c *Client, tenant string, action string) error {
+func editTenant(c *Client, tenant Tenant, action string) error {
 	td := TenantsData{}
-	td.Dn = "uni/tn-" + tenant
-	td.Name = tenant
-	td.Rn = "tn-" + tenant
+	td.Dn = "uni/tn-" + tenant.Name
+	td.Name = tenant.Name
+	td.Rn = "tn-" + tenant.Name
 	td.Status = action
 
 	p := fmt.Sprintf(tenantsPath, tenant)
@@ -64,7 +69,7 @@ func editTenant(c *Client, tenant string, action string) error {
 }
 
 // CreateTenant adds a slice of nodes to the ACI fabric memebership
-func CreateTenant(c *Client, tenant string) error {
+func CreateTenant(c *Client, tenant Tenant) error {
 	err := editTenant(c, tenant, createModify)
 	if err != nil {
 		return err
@@ -73,7 +78,7 @@ func CreateTenant(c *Client, tenant string) error {
 }
 
 // DeleteTenant adds a slice of nodes to the ACI fabric memebership
-func DeleteTenant(c *Client, tenant string) error {
+func DeleteTenant(c *Client, tenant Tenant) error {
 	err := editTenant(c, tenant, delete)
 	if err != nil {
 		return err
@@ -96,7 +101,7 @@ func ListTenants(c *Client) ([]Tenant, error) {
 
 	var tenants []Tenant
 	for _, td := range ts.TenantsData {
-		tenants = append(tenants, td.Tenant)
+		tenants = append(tenants, Tenant{td.Name})
 	}
 	return tenants, nil
 }
