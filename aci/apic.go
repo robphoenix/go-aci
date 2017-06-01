@@ -19,25 +19,27 @@ const (
 )
 
 var (
-	// T is the TLS config
-	// https://stackoverflow.com/questions/41250665/go-https-client-issue-remote-error-tls-handshake-failure#
-	T = &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+	httpTransport = &http.Transport{
 		Dial: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   5 * time.Second,
+			KeepAlive: 10 * time.Second,
 		}).Dial,
-		TLSHandshakeTimeout: 10 * time.Second,
-		TLSClientConfig: &tls.Config{
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			},
-			PreferServerCipherSuites: true,
-			InsecureSkipVerify:       true,
-			MinVersion:               tls.VersionTLS11,
-			MaxVersion:               tls.VersionTLS11,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientConfig:       tlsConfig,
+	}
+	// tlsConfig is the TLS config
+	// https://stackoverflow.com/questions/41250665/go-https-client-issue-remote-error-tls-handshake-failure#
+	tlsConfig = &tls.Config{
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 		},
+		PreferServerCipherSuites: true,
+		InsecureSkipVerify:       true,
+		MinVersion:               tls.VersionTLS11,
+		MaxVersion:               tls.VersionTLS11,
 	}
 )
 
@@ -88,7 +90,7 @@ func NewClient(host, username, password string) (*Client, error) {
 		Username: username,
 		Password: password,
 		httpClient: &http.Client{
-			Transport: T,
+			Transport: httpTransport,
 			Timeout:   15 * time.Second,
 		},
 	}, nil
@@ -96,7 +98,20 @@ func NewClient(host, username, password string) (*Client, error) {
 
 // newRequest forms an http request for use with an APIC client
 func (c *Client) newRequest(method string, path string, body interface{}) (*http.Request, error) {
-	u := url.URL{Scheme: c.Host.Scheme, Host: c.Host.Host, Path: path}
+	// We need to parse the path first so that we can use the
+	// RawPath rather than the EscapedPath.
+	//
+	// The EscapedPath is used by String() and can result in
+	// a 400 Bad Request for a path such as:
+	// /api/node/mo/uni/tn-<TENANT NAME>.json?query-target=children&target-subtree-class=fvCtx
+	// as the '?' is escaped to '%3f' and the APIC server
+	// doesn't understand it.
+	u, err := url.Parse(path)
+	if err != nil {
+		return nil, err
+	}
+	u.Scheme = c.Host.Scheme
+	u.Host = c.Host.Host
 
 	var buf io.ReadWriter
 	if body != nil {
@@ -108,6 +123,7 @@ func (c *Client) newRequest(method string, path string, body interface{}) (*http
 	}
 
 	req, err := http.NewRequest(method, u.String(), buf)
+
 	if err != nil {
 		return nil, fmt.Errorf("%s request to %s : %v", method, u.String(), err)
 	}
