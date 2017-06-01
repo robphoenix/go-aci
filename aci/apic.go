@@ -98,8 +98,6 @@ func NewClient(host, username, password string) (*Client, error) {
 
 // newRequest forms an http request for use with an APIC client
 func (c *Client) newRequest(method string, path string, body interface{}) (*http.Request, error) {
-	// We need to parse the path first.
-	// https://blog.robphoenix.com/go/using_unescaped_paths_in_go/
 	rel, err := url.Parse(path)
 	if err != nil {
 		return nil, err

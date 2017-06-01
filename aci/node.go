@@ -10,6 +10,13 @@ const (
 	listNodesPath = "api/node/class/fabricNode.json"
 )
 
+// add
+// url: https://sandboxapicdc.cisco.com/api/node/mo/uni/controller/nodeidentpol/nodep-serial1.json
+// payload{"fabricNodeIdentP":{"attributes":{"dn":"uni/controller/nodeidentpol/nodep-serial1","serial":"serial1","nodeId":"110","name":"leaf-110","role":"leaf","rn":"nodep-serial1","status":"created"},"children":[]}}
+// delete
+// url: https://sandboxapicdc.cisco.com/api/node/mo/uni/controller/nodeidentpol.json
+// payload{"fabricNodeIdentP":{"attributes":{"dn":"uni/controller/nodeidentpol/nodep-serial1","status":"deleted"},"children":[]}}
+
 // Node is a member of an ACI fabric
 type Node struct {
 	FabricStatus string
