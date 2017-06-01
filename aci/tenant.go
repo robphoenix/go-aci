@@ -56,7 +56,7 @@ func editTenant(c *Client, tenant Tenant, action string) error {
 	td.Rn = "tn-" + tenant.Name
 	td.Status = action
 
-	p := fmt.Sprintf(tenantsPath, tenant)
+	p := fmt.Sprintf(tenantsPath, tenant.Name)
 	req, err := c.newRequest(http.MethodPost, p, td)
 	if err != nil {
 		return err
