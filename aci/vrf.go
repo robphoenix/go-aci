@@ -105,8 +105,7 @@ func ListVRFs(c *Client, tenant string) ([]VRF, error) {
 	}
 
 	var vs VRFs
-	resp, err := c.do(req, &vs)
-	fmt.Printf("resp = % v\n", resp)
+	_, err := c.do(req, &vs)
 	if err != nil {
 		return nil, fmt.Errorf("list VRFs: %v", err)
 	}

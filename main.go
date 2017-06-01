@@ -25,7 +25,7 @@ func main() {
 	// if err != nil {
 	//         log.Fatal(err)
 	// }
-	vrfs, err := aci.ListVRFs(apicClient, "harry")
+	vrfs, err := aci.ListVRFs(apicClient, "CORBYN")
 	if err != nil {
 		log.Fatal(err)
 	}
