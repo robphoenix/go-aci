@@ -98,20 +98,13 @@ func NewClient(host, username, password string) (*Client, error) {
 
 // newRequest forms an http request for use with an APIC client
 func (c *Client) newRequest(method string, path string, body interface{}) (*http.Request, error) {
-	// We need to parse the path first so that we can use the
-	// RawPath rather than the EscapedPath.
-	//
-	// The EscapedPath is used by String() and can result in
-	// a 400 Bad Request for a path such as:
-	// /api/node/mo/uni/tn-<TENANT NAME>.json?query-target=children&target-subtree-class=fvCtx
-	// as the '?' is escaped to '%3f' and the APIC server
-	// doesn't understand it.
-	u, err := url.Parse(path)
+	// We need to parse the path first.
+	// https://blog.robphoenix.com/go/using_unescaped_paths_in_go/
+	rel, err := url.Parse(path)
 	if err != nil {
 		return nil, err
 	}
-	u.Scheme = c.Host.Scheme
-	u.Host = c.Host.Host
+	u := c.Host.ResolveReference(rel)
 
 	var buf io.ReadWriter
 	if body != nil {
