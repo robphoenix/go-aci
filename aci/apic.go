@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -41,6 +42,7 @@ var (
 		MinVersion:               tls.VersionTLS11,
 		MaxVersion:               tls.VersionTLS11,
 	}
+	clientTimeout = 15 * time.Second
 )
 
 // Client manages communication with the APIC API
@@ -91,7 +93,7 @@ func NewClient(host, username, password string) (*Client, error) {
 		Password: password,
 		httpClient: &http.Client{
 			Transport: httpTransport,
-			Timeout:   15 * time.Second,
+			Timeout:   clientTimeout,
 		},
 	}, nil
 }
@@ -128,12 +130,15 @@ func (c *Client) newRequest(method string, path string, body interface{}) (*http
 func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf(
-			"%s response with %s request from %s : %v",
-			resp.Status,
-			req.Method,
-			req.URL.String(),
-			err)
+		if resp != nil {
+			return nil, fmt.Errorf(
+				"%s response with %s request from %s : %v",
+				resp.Status,
+				req.Method,
+				req.URL.String(),
+				err)
+		}
+		return nil, err
 	}
 	defer resp.Body.Close()
 	err = json.NewDecoder(resp.Body).Decode(v)
@@ -155,6 +160,12 @@ func (c *Client) Login() error {
 	resp, err := c.do(req, &la)
 	if err != nil {
 		return fmt.Errorf("login for %s: %v", lr.Name, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		fmt.Printf("body = %+v\n", body)
+		return fmt.Errorf("unable to authenticate: %s: %v", resp.Status, err)
 	}
 	// get auth cookie
 	// TODO check cookie name?
