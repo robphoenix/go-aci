@@ -2,7 +2,6 @@ package aci
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -112,13 +111,7 @@ func editNodes(c *Client, ns []Node, action string) error {
 
 	var f FabricNodes
 
-	resp, err := c.do(req, &f)
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		fmt.Printf("body = %+v\n", body)
-		return fmt.Errorf("error fetching remote data: %s: %v", resp.Status, err)
-	}
+	_, err = c.do(req, &f)
 	return err
 }
 

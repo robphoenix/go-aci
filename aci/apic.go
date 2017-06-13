@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,6 +17,8 @@ const (
 	createModify = "created,modified"
 	delete       = "deleted"
 	loginPath    = "api/aaaLogin.json"
+	// ErrAlreadyDiscovered - Can't remove node identity policy - Node TEP-1-102 is already discovered. Please decommission first.
+	ErrAlreadyDiscovered = "107"
 )
 
 var (
@@ -85,6 +87,24 @@ type loginAttributes struct {
 	Version                string `json:"version,omitempty"`
 }
 
+// ErrorResponse ...
+type ErrorResponse struct {
+	Imdata []struct {
+		ImdataError `json:"error"`
+	} `json:"imdata"`
+}
+
+// ImdataError ...
+type ImdataError struct {
+	ErrorAttributes `json:"attributes"`
+}
+
+// ErrorAttributes ...
+type ErrorAttributes struct {
+	Code string `json:"code"`
+	Text string `json:"text"`
+}
+
 // NewClient instantiates a new APIC client
 func NewClient(host, username, password string) (*Client, error) {
 	return &Client{
@@ -141,6 +161,14 @@ func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		var e ErrorResponse
+		err = json.NewDecoder(resp.Body).Decode(&e)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return resp, fmt.Errorf("error with repsonse: %s: %s: %s", resp.Status, e.Imdata[0].Code, e.Imdata[0].Text)
+	}
 	err = json.NewDecoder(resp.Body).Decode(v)
 	return resp, err
 }
@@ -162,10 +190,7 @@ func (c *Client) Login() error {
 		return fmt.Errorf("login for %s: %v", lr.Name, err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		fmt.Printf("body = %+v\n", body)
-		return fmt.Errorf("unable to authenticate: %s: %v", resp.Status, err)
+		return fmt.Errorf("unable to authenticate: %s", resp.Status)
 	}
 	// get auth cookie
 	// TODO check cookie name?
