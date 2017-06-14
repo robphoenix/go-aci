@@ -105,6 +105,12 @@ type ErrorAttributes struct {
 	Text string `json:"text"`
 }
 
+// Mapper ...
+type Mapper interface {
+	Key() string
+	Value() Mapper
+}
+
 // NewClient instantiates a new APIC client
 func NewClient(host, username, password string) (*Client, error) {
 	return &Client{

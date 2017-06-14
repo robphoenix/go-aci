@@ -105,3 +105,13 @@ func ListTenants(c *Client) ([]Tenant, error) {
 	}
 	return tenants, nil
 }
+
+// Key ...
+func (t Tenant) Key() string {
+	return t.Name
+}
+
+// Value ...
+func (t Tenant) Value() Tenant {
+	return t
+}

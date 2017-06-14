@@ -177,3 +177,13 @@ func (c *Client) decomissionNode() error {
 	// }
 	return nil
 }
+
+// Key ...
+func (n *Node) Key() string {
+	return n.Serial + n.ID + n.Name
+}
+
+// Value ...
+func (n *Node) Value() Node {
+	return *n
+}
