@@ -115,8 +115,8 @@ func editNodes(c *Client, ns []Node, action string) error {
 	return err
 }
 
-// CreateNodes adds a slice of nodes to the ACI fabric memebership
-func CreateNodes(c *Client, ns []Node) error {
+// CreateNodes adds a slice of nodes to the ACI fabric membership
+func (c *Client) CreateNodes(ns []Node) error {
 	err := editNodes(c, ns, createModify)
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func CreateNodes(c *Client, ns []Node) error {
 }
 
 // DeleteNodes deletes a slice of nodes from the ACI fabric membership
-func DeleteNodes(c *Client, ns []Node) error {
+func (c *Client) DeleteNodes(ns []Node) error {
 	err := editNodes(c, ns, delete)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func DeleteNodes(c *Client, ns []Node) error {
 }
 
 // ListNodes lists all node members of the ACI fabric
-func ListNodes(c *Client) ([]Node, error) {
+func (c *Client) ListNodes() ([]Node, error) {
 	req, err := c.NewRequest(http.MethodGet, listNodesPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
@@ -162,28 +162,28 @@ func ListNodes(c *Client) ([]Node, error) {
 	return ns, nil
 }
 
-func (c *Client) decomissionNode() error {
-	// https://supportforums.cisco.com/discussion/13296271/decommissioning-fabric-nodes-api
-	// url := "https://sandboxapicdc.cisco.com/api/node/mo/uni/fabric/outofsvc.json"
-	// {
-	//   "fabricRsDecommissionNode": {
-	//     "attributes": {
-	//       "tDn": "topology/pod-1/node-102",
-	//       "status": "created,modified",
-	//       "removeFromController": "true"
-	//     },
-	//     "children": []
-	//   }
-	// }
-	return nil
-}
+// func (c *Client) decomissionNode() error {
+// https://supportforums.cisco.com/discussion/13296271/decommissioning-fabric-nodes-api
+// url := "https://sandboxapicdc.cisco.com/api/node/mo/uni/fabric/outofsvc.json"
+// {
+//   "fabricRsDecommissionNode": {
+//     "attributes": {
+//       "tDn": "topology/pod-1/node-102",
+//       "status": "created,modified",
+//       "removeFromController": "true"
+//     },
+//     "children": []
+//   }
+// }
+//         return nil
+// }
 
-// Key ...
+// Key implements the Key method of the Mapper interface
 func (n *Node) Key() string {
 	return n.Serial + n.ID + n.Name
 }
 
-// Value ...
+// Value implements the Value method of the Mapper interface
 func (n *Node) Value() Node {
 	return *n
 }
