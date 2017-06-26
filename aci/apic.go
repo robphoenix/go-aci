@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -63,30 +62,6 @@ type Client struct {
 	httpClient *http.Client
 }
 
-// ErrorResponse ...
-type ErrorResponse struct {
-	Imdata []struct {
-		ImdataError `json:"error"`
-	} `json:"imdata"`
-}
-
-// ImdataError ...
-type ImdataError struct {
-	ErrorAttributes `json:"attributes"`
-}
-
-// ErrorAttributes ...
-type ErrorAttributes struct {
-	Code string `json:"code"`
-	Text string `json:"text"`
-}
-
-// Mapper ...
-type Mapper interface {
-	Key() string
-	Value() Mapper
-}
-
 // NewClient instantiates a new APIC client
 func NewClient(o ClientOptions) (*Client, error) {
 	return &Client{
@@ -132,24 +107,14 @@ func (c *Client) NewRequest(method string, path string, body interface{}) (*http
 func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		if resp != nil {
-			return nil, fmt.Errorf(
-				"%s response with %s request from %s : %v",
-				resp.Status,
-				req.Method,
-				req.URL.String(),
-				err)
-		}
-		return nil, err
+		return nil, fmt.Errorf("%v %v: %d %v", req.Method, req.URL.String(), resp.StatusCode, err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		var e ErrorResponse
-		err = json.NewDecoder(resp.Body).Decode(&e)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return resp, fmt.Errorf("error with repsonse: %s: %s: %s", resp.Status, e.Imdata[0].Code, e.Imdata[0].Text)
+	err = CheckResponse(resp)
+	if err != nil {
+		// even though there was an error, we still return the response
+		// in case the caller wants to inspect it further
+		return resp, err
 	}
 	err = json.NewDecoder(resp.Body).Decode(v)
 	return resp, err
@@ -200,11 +165,7 @@ func (c *Client) Login() error {
 	var la loginAttributes
 	resp, err := c.Do(req, &la)
 	if err != nil {
-		return fmt.Errorf("login for %s: %v", lr.Name, err)
-	}
-	err = CheckResponse(resp)
-	if err != nil {
-		return fmt.Errorf("unable to authenticate: %v", err)
+		return err
 	}
 
 	// get auth cookie
@@ -214,17 +175,49 @@ func (c *Client) Login() error {
 	return nil
 }
 
+// ErrorResponse reports any errors caused by an API request.
+type ErrorResponse struct {
+	Response *http.Response // HTTP response that caused this error
+	// Imdata is an array of errors
+	Imdata []struct {
+		ImdataError struct {
+			ErrorAttributes struct {
+				Code string `json:"code"` // APIC specific error code
+				Text string `json:"text"` // Error Text
+			} `json:"attributes"`
+		} `json:"error"`
+	} `json:"imdata"`
+}
+
+func (r *ErrorResponse) Error() string {
+	return fmt.Sprintf("%v %v: %d %v (APIC Code: %+v)",
+		r.Response.Request.Method,
+		r.Response.Request.URL,
+		r.Response.StatusCode,
+		// while Imdata is an array of errors, we only want the first one
+		r.Imdata[0].ImdataError.ErrorAttributes.Text,
+		r.Imdata[0].ImdataError.ErrorAttributes.Code,
+	)
+}
+
 // CheckResponse checks the API response for errors, and returns them if
 // present.
 //
-// TODO: A response is considered an error if it has a status code outside
-// the 200 range or equal to 202 Accepted.
-// API error responses are expected to have either no response
-// body, or a JSON response body that maps to ErrorResponse. Any other
-// response body will be silently ignored.
+// A response is considered an error if it has a status code outside
+// the 200 range.  API error responses are expected to have a JSON
+// response body that maps to ErrorResponse. Any other response body
+// will be silently ignored.
 func CheckResponse(r *http.Response) error {
-	if r.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad response: %s", r.Status)
+	if c := r.StatusCode; 200 <= c && c <= 299 {
+		return nil
 	}
-	return nil
+	errorResponse := &ErrorResponse{Response: r}
+	json.NewDecoder(r.Body).Decode(errorResponse)
+	return errorResponse
+}
+
+// Mapper ...
+type Mapper interface {
+	Key() string
+	Value() Mapper
 }
