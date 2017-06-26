@@ -28,40 +28,38 @@ type Node struct {
 	Role         string
 }
 
-// FabricNodeIdentPolContainer is a container for a FabricNodeIdentPol
-type FabricNodeIdentPolContainer struct {
-	FabricNodeIdentPol `json:"fabricNodeIdentPol"`
+// NIPContainer is a container for a NodeIdentityProfile
+type NIPContainer struct {
+	NodeIdentityProfile `json:"fabricNodeIdentPol"`
 }
 
-// FabricNodeIdentPol is a container for an ACI node identity profile
-type FabricNodeIdentPol struct {
+// NodeIdentityProfile is a container for the node identity profile
+type NodeIdentityProfile struct {
 	NodeAttributes `json:"attributes"`
-	Children       []FabricNodeIdentPContainer `json:"children"`
+	Children       []FNContainer `json:"children"`
 }
 
-// FabricNodeIdentPContainer is a container for a FabricNodeIdentP
-type FabricNodeIdentPContainer struct {
-	FabricNodeIdentP `json:"fabricNodeIdentP"`
+// FNContainer is a container for a Fabric Node
+type FNContainer struct {
+	FabricNode `json:"fabricNodeIdentP"`
 }
 
-// FabricNodeIdentP is the node identity profile,
-// that assigns IDs to the fabric nodes
-type FabricNodeIdentP struct {
+// FabricNode is the node identity profile
+type FabricNode struct {
 	NodeAttributes `json:"attributes"`
 }
 
-// FabricNodes contains is the response body for requests
-// about current ACI fabric nodes
-type FabricNodes struct {
+// nodesResponse contains the response for ACI fabric nodes requests
+type nodesResponse struct {
 	NodesImdata []NodesImdata `json:"imdata"`
 }
 
-// NodesImdata is a container for the response structure
+// NodesImdata is describes the node in the nodes response structure
 type NodesImdata struct {
-	FabricNodeIdentP `json:"fabricNode"`
+	FabricNode `json:"fabricNode"`
 }
 
-// NodeAttributes contains all the attributes of an ACI fabric node
+// NodeAttributes contains all the attributes of an ACI fabric node API request/response
 type NodeAttributes struct {
 	Status           string `json:"status,omitempty"`
 	AdSt             string `json:"adSt,omitempty"`
@@ -84,32 +82,32 @@ type NodeAttributes struct {
 	Version          string `json:"version,omitempty"`
 }
 
-func buildFabricNodeContainer(ns []Node, action string) FabricNodeIdentPolContainer {
-	var c []FabricNodeIdentPContainer
+func newNIPContainer(ns []Node, action string) NIPContainer {
+	var fs []FNContainer
 	for _, n := range ns {
-		var fp FabricNodeIdentPContainer
-		fp.Name = n.Name
-		fp.NodeID = n.ID
-		fp.Serial = n.Serial
-		fp.Status = action
-		c = append(c, fp)
+		var f FNContainer
+		f.Name = n.Name
+		f.NodeID = n.ID
+		f.Serial = n.Serial
+		f.Status = action
+		fs = append(fs, f)
 	}
-	var fpc FabricNodeIdentPolContainer
-	fpc.Status = createModify
-	fpc.Children = c
-	return fpc
+	var nc NIPContainer
+	nc.Status = createModify
+	nc.Children = fs
+	return nc
 }
 
 // editNodes takes a createModify or delete action and performs the
 // necessary API request
 func editNodes(c *Client, ns []Node, action string) error {
-	fpol := buildFabricNodeContainer(ns, action)
-	req, err := c.NewRequest(http.MethodPost, nodesPath, fpol)
+	nip := newNIPContainer(ns, action)
+	req, err := c.NewRequest(http.MethodPost, nodesPath, nip)
 	if err != nil {
 		return err
 	}
 
-	var f FabricNodes
+	var f nodesResponse
 
 	_, err = c.Do(req, &f)
 	return err
@@ -140,7 +138,7 @@ func (c *Client) ListNodes() ([]Node, error) {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
 
-	var n FabricNodes
+	var n nodesResponse
 	_, err = c.Do(req, &n)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
