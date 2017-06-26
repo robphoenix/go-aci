@@ -47,6 +47,13 @@ var (
 	clientTimeout = 15 * time.Second
 )
 
+// ClientOptions specifies the client connection options
+type ClientOptions struct {
+	Host     string
+	Username string
+	Password string
+}
+
 // Client manages communication with the APIC API
 type Client struct {
 	Host       *url.URL
@@ -112,11 +119,11 @@ type Mapper interface {
 }
 
 // NewClient instantiates a new APIC client
-func NewClient(host, username, password string) (*Client, error) {
+func NewClient(o ClientOptions) (*Client, error) {
 	return &Client{
-		Host:     &url.URL{Scheme: "https", Host: host},
-		Username: username,
-		Password: password,
+		Host:     &url.URL{Scheme: "https", Host: o.Host},
+		Username: o.Username,
+		Password: o.Password,
 		httpClient: &http.Client{
 			Transport: httpTransport,
 			Timeout:   clientTimeout,
