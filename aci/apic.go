@@ -228,7 +228,8 @@ func CheckResponse(r *http.Response) error {
 	return errorResponse
 }
 
-// Mapper ...
+// Mapper wraps basic key/value methods.
+// This is useful for building hashmaps of ACI objects.
 type Mapper interface {
 	Key() string
 	Value() Mapper
