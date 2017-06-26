@@ -63,37 +63,6 @@ type Client struct {
 	httpClient *http.Client
 }
 
-// loginRequest is the JSON request for
-// authenticating with APIC
-type loginRequest struct {
-	AAA `json:"aaaUser"`
-}
-
-// AAA is part of the authentication process
-// that holds authentication attributes
-type AAA struct {
-	loginAttributes `json:"attributes"`
-}
-
-// loginAttributes is the attributes of the APIC
-// authentication request and response
-type loginAttributes struct {
-	Name                   string `json:"name,omitempty"`
-	Pwd                    string `json:"pwd,omitempty"`
-	FirstLoginTime         string `json:"firstLoginTime,omitempty"`
-	FirstName              string `json:"firstName,omitempty"`
-	LastName               string `json:"lastName,omitempty"`
-	MaximumLifetimeSeconds string `json:"maximumLifetimeSeconds,omitempty"`
-	Node                   string `json:"node,omitempty"`
-	RefreshTimeoutSeconds  string `json:"refreshTimeoutSeconds,omitempty"`
-	RestTimeoutSeconds     string `json:"restTimeoutSeconds,omitempty"`
-	SessionID              string `json:"sessionId,omitempty"`
-	SiteFingerprint        string `json:"siteFingerprint,omitempty"`
-	Token                  string `json:"token,omitempty"`
-	UserName               string `json:"userName,omitempty"`
-	Version                string `json:"version,omitempty"`
-}
-
 // ErrorResponse ...
 type ErrorResponse struct {
 	Imdata []struct {
@@ -186,12 +155,43 @@ func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
 	return resp, err
 }
 
+// loginRequest is the JSON request for authenticating with the APIC
+type loginRequest struct {
+	AAA `json:"aaaUser"`
+}
+
+// AAA is part of the authentication process
+// that holds authentication attributes
+type AAA struct {
+	loginAttributes `json:"attributes"`
+}
+
+// loginAttributes is the attributes of the APIC
+// authentication request and response
+type loginAttributes struct {
+	Name                   string `json:"name,omitempty"`
+	Pwd                    string `json:"pwd,omitempty"`
+	FirstLoginTime         string `json:"firstLoginTime,omitempty"`
+	FirstName              string `json:"firstName,omitempty"`
+	LastName               string `json:"lastName,omitempty"`
+	MaximumLifetimeSeconds string `json:"maximumLifetimeSeconds,omitempty"`
+	Node                   string `json:"node,omitempty"`
+	RefreshTimeoutSeconds  string `json:"refreshTimeoutSeconds,omitempty"`
+	RestTimeoutSeconds     string `json:"restTimeoutSeconds,omitempty"`
+	SessionID              string `json:"sessionId,omitempty"`
+	SiteFingerprint        string `json:"siteFingerprint,omitempty"`
+	Token                  string `json:"token,omitempty"`
+	UserName               string `json:"userName,omitempty"`
+	Version                string `json:"version,omitempty"`
+}
+
 // Login authenticates a new APIC session
 // adding the apicCookie to the client
 func (c *Client) Login() error {
 	var lr loginRequest
 	lr.Name = c.Username
 	lr.Pwd = c.Password
+
 	req, err := c.newRequest(http.MethodPost, loginPath, lr)
 	if err != nil {
 		return fmt.Errorf("login for %s: %v", lr.Name, err)
@@ -202,12 +202,29 @@ func (c *Client) Login() error {
 	if err != nil {
 		return fmt.Errorf("login for %s: %v", lr.Name, err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unable to authenticate: %s", resp.Status)
+	err = CheckResponse(resp)
+	if err != nil {
+		return fmt.Errorf("unable to authenticate: %v", err)
 	}
+
 	// get auth cookie
 	// TODO check cookie name?
 	apicCookie := resp.Cookies()[0]
 	c.Cookie = apicCookie.String()
+	return nil
+}
+
+// CheckResponse checks the API response for errors, and returns them if
+// present.
+//
+// TODO: A response is considered an error if it has a status code outside
+// the 200 range or equal to 202 Accepted.
+// API error responses are expected to have either no response
+// body, or a JSON response body that maps to ErrorResponse. Any other
+// response body will be silently ignored.
+func CheckResponse(r *http.Response) error {
+	if r.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad response: %s", r.Status)
+	}
 	return nil
 }
