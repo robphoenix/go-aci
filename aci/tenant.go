@@ -57,14 +57,14 @@ func editTenant(c *Client, tenant Tenant, action string) error {
 	td.Status = action
 
 	p := fmt.Sprintf(tenantsPath, tenant.Name)
-	req, err := c.newRequest(http.MethodPost, p, td)
+	req, err := c.NewRequest(http.MethodPost, p, td)
 	if err != nil {
 		return err
 	}
 
 	var f interface{}
 
-	_, err = c.do(req, &f)
+	_, err = c.Do(req, &f)
 	return err
 }
 
@@ -88,13 +88,13 @@ func DeleteTenant(c *Client, tenant Tenant) error {
 
 // ListTenants lists all node members of the ACI fabric
 func ListTenants(c *Client) ([]Tenant, error) {
-	req, err := c.newRequest(http.MethodGet, listTenantsPath, nil)
+	req, err := c.NewRequest(http.MethodGet, listTenantsPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list tenants: %v", err)
 	}
 
 	var ts Tenants
-	_, err = c.do(req, &ts)
+	_, err = c.Do(req, &ts)
 	if err != nil {
 		return nil, fmt.Errorf("list tenants: %v", err)
 	}

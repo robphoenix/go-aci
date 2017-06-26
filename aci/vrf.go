@@ -67,14 +67,14 @@ func editVRF(c *Client, v VRF, action string) error {
 	vd.Status = action
 
 	p := fmt.Sprintf(vrfPath, v.Tenant, v.Name)
-	req, err := c.newRequest(http.MethodPost, p, vd)
+	req, err := c.NewRequest(http.MethodPost, p, vd)
 	if err != nil {
 		return err
 	}
 
 	var f interface{}
 
-	_, err = c.do(req, &f)
+	_, err = c.Do(req, &f)
 	return err
 }
 
@@ -99,13 +99,13 @@ func DeleteVRF(c *Client, v VRF) error {
 // ListVRFs lists all node members of the ACI fabric
 func ListVRFs(c *Client, tenant string) ([]VRF, error) {
 	p := fmt.Sprintf(vrfListPath, tenant)
-	req, err := c.newRequest(http.MethodGet, p, nil)
+	req, err := c.NewRequest(http.MethodGet, p, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list VRFs: %v", err)
 	}
 
 	var vs VRFs
-	_, err = c.do(req, &vs)
+	_, err = c.Do(req, &vs)
 	if err != nil {
 		return nil, fmt.Errorf("list VRFs: %v", err)
 	}

@@ -100,8 +100,8 @@ func NewClient(o ClientOptions) (*Client, error) {
 	}, nil
 }
 
-// newRequest forms an http request for use with an APIC client
-func (c *Client) newRequest(method string, path string, body interface{}) (*http.Request, error) {
+// NewRequest forms an http request for use with an APIC client
+func (c *Client) NewRequest(method string, path string, body interface{}) (*http.Request, error) {
 	rel, err := url.Parse(path)
 	if err != nil {
 		return nil, err
@@ -128,8 +128,8 @@ func (c *Client) newRequest(method string, path string, body interface{}) (*http
 	return req, nil
 }
 
-// do performs APIC client http requests
-func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
+// Do performs APIC client http requests
+func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		if resp != nil {
@@ -192,13 +192,13 @@ func (c *Client) Login() error {
 	lr.Name = c.Username
 	lr.Pwd = c.Password
 
-	req, err := c.newRequest(http.MethodPost, loginPath, lr)
+	req, err := c.NewRequest(http.MethodPost, loginPath, lr)
 	if err != nil {
 		return fmt.Errorf("login for %s: %v", lr.Name, err)
 	}
 
 	var la loginAttributes
-	resp, err := c.do(req, &la)
+	resp, err := c.Do(req, &la)
 	if err != nil {
 		return fmt.Errorf("login for %s: %v", lr.Name, err)
 	}
