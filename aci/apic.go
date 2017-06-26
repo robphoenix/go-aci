@@ -58,7 +58,7 @@ type Client struct {
 	Host       *url.URL
 	Username   string
 	Password   string
-	Cookie     string
+	cookie     string
 	httpClient *http.Client
 }
 
@@ -97,8 +97,8 @@ func (c *Client) NewRequest(method string, path string, body interface{}) (*http
 	if err != nil {
 		return nil, fmt.Errorf("%s request to %s : %v", method, u.String(), err)
 	}
-	if c.Cookie != "" {
-		req.Header.Set("Cookie", c.Cookie)
+	if c.Cookie() != "" {
+		req.Header.Set("Cookie", c.Cookie())
 	}
 	return req, nil
 }
@@ -118,6 +118,21 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}
 	err = json.NewDecoder(resp.Body).Decode(v)
 	return resp, err
+}
+
+// SetCookie sets the value of the APIC authentication cookie
+func (c *Client) SetCookie(r *http.Response) {
+	for _, cookie := range r.Cookies() {
+		if cookie.Name == "APIC-cookie" {
+			c.cookie = cookie.String()
+		}
+	}
+}
+
+// Cookie returns the APIC authentication cookie.
+// Returns an empty string if it has not been set.
+func (c *Client) Cookie() string {
+	return c.cookie
 }
 
 // loginRequest is the JSON request for authenticating with the APIC
@@ -150,8 +165,7 @@ type loginAttributes struct {
 	Version                string `json:"version,omitempty"`
 }
 
-// Login authenticates a new APIC session
-// adding the apicCookie to the client
+// Login authenticates a new APIC session, setting the authentication cookie
 func (c *Client) Login() error {
 	var lr loginRequest
 	lr.Name = c.Username
@@ -168,18 +182,16 @@ func (c *Client) Login() error {
 		return err
 	}
 
-	// get auth cookie
-	// TODO check cookie name?
-	apicCookie := resp.Cookies()[0]
-	c.Cookie = apicCookie.String()
+	// set auth cookie
+	c.SetCookie(resp)
+
 	return nil
 }
 
 // ErrorResponse reports any errors caused by an API request.
 type ErrorResponse struct {
 	Response *http.Response // HTTP response that caused this error
-	// Imdata is an array of errors
-	Imdata []struct {
+	Imdata   []struct {     // Imdata is an array of errors
 		ImdataError struct {
 			ErrorAttributes struct {
 				Code string `json:"code"` // APIC specific error code
@@ -194,7 +206,7 @@ func (r *ErrorResponse) Error() string {
 		r.Response.Request.Method,
 		r.Response.Request.URL,
 		r.Response.StatusCode,
-		// while Imdata is an array of errors, we only want the first one
+		// while Imdata is an array of errors, we only want the first one (I think)
 		r.Imdata[0].ImdataError.ErrorAttributes.Text,
 		r.Imdata[0].ImdataError.ErrorAttributes.Code,
 	)
