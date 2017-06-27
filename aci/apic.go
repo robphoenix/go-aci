@@ -221,24 +221,31 @@ func (c *Client) Login() error {
 // ErrorResponse reports any errors caused by an API request.
 type ErrorResponse struct {
 	Response *http.Response // HTTP response that caused this error
-	Imdata   []struct {     // Imdata is an array of errors
-		ImdataError struct {
-			ErrorAttributes struct {
-				Code string `json:"code"` // APIC specific error code
-				Text string `json:"text"` // Error Text
-			} `json:"attributes"`
-		} `json:"error"`
-	} `json:"imdata"`
+	Errors   []Error        `json:"imdata"` // APIC details on errors
+}
+
+// Error is the error response from the APIC server
+type Error struct {
+	imdataError `json:"error"`
+}
+
+type imdataError struct {
+	errorAttributes `json:"attributes"`
+}
+
+type errorAttributes struct {
+	Code string `json:"code"` // APIC specific error code
+	Text string `json:"text"` // Error Text
 }
 
 func (r *ErrorResponse) Error() string {
-	return fmt.Sprintf("%v %v: %d %v (APIC Code: %+v)",
+	return fmt.Sprintf("%v %v: %d %s (%s)",
 		r.Response.Request.Method,
 		r.Response.Request.URL,
 		r.Response.StatusCode,
 		// while Imdata is an array of errors, we only want the first one (I think)
-		r.Imdata[0].ImdataError.ErrorAttributes.Text,
-		r.Imdata[0].ImdataError.ErrorAttributes.Code,
+		r.Errors[0].Text,
+		r.Errors[0].Code,
 	)
 }
 
