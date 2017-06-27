@@ -55,19 +55,65 @@ type ClientOptions struct {
 
 // Client manages communication with the APIC API
 type Client struct {
-	Host       *url.URL
-	Username   string
-	Password   string
+	host       *url.URL
+	username   string
+	password   string
 	cookie     string
 	httpClient *http.Client
+}
+
+// Host returns the URL of the APIC client
+func (c *Client) Host() *url.URL {
+	return c.host
+}
+
+// SetHost sets the URL of the APIC client
+func (c *Client) SetHost(s string) {
+	c.host = &url.URL{Scheme: "https", Host: s}
+}
+
+// Username returns the authentication username of the APIC client
+func (c *Client) Username() string {
+	return c.username
+}
+
+// SetUsername set the authentication username of the APIC client
+func (c *Client) SetUsername(s string) {
+	c.username = s
+}
+
+// Password returns the authentication password of the APIC client
+func (c *Client) Password() string {
+	return c.username
+}
+
+// SetPassword sets the authentication password of the APIC client
+func (c *Client) SetPassword(s string) {
+	c.username = s
+}
+
+// Cookie returns the APIC authentication cookie.
+// Returns an empty string if it has not been set.
+func (c *Client) Cookie() string {
+	return c.cookie
+}
+
+// SetCookie sets the value of the APIC authentication cookie
+// It requires the response received from a login request.
+func (c *Client) SetCookie(r *http.Response) {
+	for _, cookie := range r.Cookies() {
+		if cookie.Name == "APIC-cookie" {
+			c.cookie = cookie.String()
+		}
+	}
 }
 
 // NewClient instantiates a new APIC client
 func NewClient(o ClientOptions) (*Client, error) {
 	return &Client{
-		Host:     &url.URL{Scheme: "https", Host: o.Host},
-		Username: o.Username,
-		Password: o.Password,
+		host:     &url.URL{Scheme: "https", Host: o.Host},
+		username: o.Username,
+		password: o.Password,
 		httpClient: &http.Client{
 			Transport: httpTransport,
 			Timeout:   clientTimeout,
@@ -79,23 +125,22 @@ func NewClient(o ClientOptions) (*Client, error) {
 func (c *Client) NewRequest(method string, path string, body interface{}) (*http.Request, error) {
 	rel, err := url.Parse(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s %s: %v", method, path, err)
 	}
-	u := c.Host.ResolveReference(rel)
+	u := c.Host().ResolveReference(rel)
 
 	var buf io.ReadWriter
 	if body != nil {
 		buf = new(bytes.Buffer)
 		err := json.NewEncoder(buf).Encode(body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s %s: %v", method, u.String(), err)
 		}
 	}
 
 	req, err := http.NewRequest(method, u.String(), buf)
-
 	if err != nil {
-		return nil, fmt.Errorf("%s request to %s : %v", method, u.String(), err)
+		return nil, fmt.Errorf("%s %s: %v", req.Method, req.URL.String(), err)
 	}
 	if c.Cookie() != "" {
 		req.Header.Set("Cookie", c.Cookie())
@@ -118,21 +163,6 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}
 	err = json.NewDecoder(resp.Body).Decode(v)
 	return resp, err
-}
-
-// SetCookie sets the value of the APIC authentication cookie
-func (c *Client) SetCookie(r *http.Response) {
-	for _, cookie := range r.Cookies() {
-		if cookie.Name == "APIC-cookie" {
-			c.cookie = cookie.String()
-		}
-	}
-}
-
-// Cookie returns the APIC authentication cookie.
-// Returns an empty string if it has not been set.
-func (c *Client) Cookie() string {
-	return c.cookie
 }
 
 // loginRequest is the JSON request for authenticating with the APIC
@@ -168,8 +198,8 @@ type loginAttributes struct {
 // Login authenticates a new APIC session, setting the authentication cookie
 func (c *Client) Login() error {
 	var lr loginRequest
-	lr.Name = c.Username
-	lr.Pwd = c.Password
+	lr.Name = c.Username()
+	lr.Pwd = c.Password()
 
 	req, err := c.NewRequest(http.MethodPost, loginPath, lr)
 	if err != nil {
