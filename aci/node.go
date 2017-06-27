@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -16,10 +15,6 @@ const (
 	nodeDN         = "uni/controller/nodeidentpol/nodep-"
 	nodeRN         = "nodep-"
 )
-
-// delete
-// url: https://sandboxapicdc.cisco.com/api/node/mo/uni/controller/nodeidentpol.json
-// payload{"fabricNodeIdentP":{"attributes":{"dn":"uni/controller/nodeidentpol/nodep-serial1","status":"deleted"},"children":[]}}
 
 // Node is a member of an ACI fabric
 type Node struct {
@@ -64,7 +59,7 @@ func (n *Node) SetSerial(s string) error {
 	if !validSerial.MatchString(s) {
 		return fmt.Errorf("invalid serial number: %s can only contain letters and numbers and have a max length of 16", s)
 	}
-	n.serial = strings.ToUpper(s)
+	n.serial = s
 	return nil
 }
 
@@ -123,55 +118,21 @@ type NodeAttributes struct {
 	Version          string `json:"version,omitempty"`
 }
 
-// AddNode adds a single node to the ACI fabric membership
-func (c *Client) AddNode(n Node) error {
+func newFNContainer(n Node, action string) FNContainer {
 	var f FNContainer
 	f.Name = n.Name
 	f.NodeID = n.ID()
 	f.Serial = n.Serial()
-	f.Status = createModify
+	f.Status = action
 	f.DN = nodeDN + n.Serial()
 	f.RN = nodeRN + n.Serial()
-
-	path := fmt.Sprintf(nodeAddPath, n.Serial())
-
-	req, err := c.NewRequest(http.MethodPost, path, f)
-	if err != nil {
-		return err
-	}
-
-	var nr nodesResponse
-
-	_, err = c.Do(req, &nr)
-	return err
-}
-
-// DeleteNode deletes a fabric membership node
-func (c *Client) DeleteNode(n Node) error {
-	var f FNContainer
-	f.Status = delete
-	f.DN = nodeDN + n.Serial()
-
-	req, err := c.NewRequest(http.MethodPost, nodeDeletePath, f)
-	if err != nil {
-		return err
-	}
-
-	var nr nodesResponse
-
-	_, err = c.Do(req, &nr)
-	return err
+	return f
 }
 
 func newNIPContainer(ns []Node, action string) NIPContainer {
 	var fs []FNContainer
 	for _, n := range ns {
-		var f FNContainer
-		f.Name = n.Name
-		f.NodeID = n.ID()
-		f.Serial = n.Serial()
-		f.Status = action
-		fs = append(fs, f)
+		fs = append(fs, newFNContainer(n, action))
 	}
 	var nc NIPContainer
 	nc.Status = createModify
@@ -179,8 +140,38 @@ func newNIPContainer(ns []Node, action string) NIPContainer {
 	return nc
 }
 
-// editNodes takes a createModify or delete action and performs the
-// necessary API request
+// AddNode adds a single node to the ACI fabric membership
+func (c *Client) AddNode(n Node) error {
+	return editNode(c, n, createModify)
+}
+
+// DeleteNode deletes a fabric membership node
+func (c *Client) DeleteNode(n Node) error {
+	return editNode(c, n, delete)
+}
+
+func editNode(c *Client, n Node, action string) error {
+	req, err := c.NewRequest(http.MethodPost, nodeDeletePath, newFNContainer(n, action))
+	if err != nil {
+		return err
+	}
+
+	var nr nodesResponse
+
+	_, err = c.Do(req, &nr)
+	return err
+}
+
+// AddNodes adds a slice of nodes to the ACI fabric membership
+func (c *Client) AddNodes(ns []Node) error {
+	return editNodes(c, ns, createModify)
+}
+
+// DeleteNodes deletes a slice of nodes from the ACI fabric membership
+func (c *Client) DeleteNodes(ns []Node) error {
+	return editNodes(c, ns, delete)
+}
+
 func editNodes(c *Client, ns []Node, action string) error {
 	nip := newNIPContainer(ns, action)
 	req, err := c.NewRequest(http.MethodPost, nodesPath, nip)
@@ -188,28 +179,10 @@ func editNodes(c *Client, ns []Node, action string) error {
 		return err
 	}
 
-	var f nodesResponse
+	var nr nodesResponse
 
-	_, err = c.Do(req, &f)
+	_, err = c.Do(req, &nr)
 	return err
-}
-
-// CreateNodes adds a slice of nodes to the ACI fabric membership
-func (c *Client) CreateNodes(ns []Node) error {
-	err := editNodes(c, ns, createModify)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// DeleteNodes deletes a slice of nodes from the ACI fabric membership
-func (c *Client) DeleteNodes(ns []Node) error {
-	err := editNodes(c, ns, delete)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // ListNodes lists all node members of the ACI fabric
@@ -219,8 +192,8 @@ func (c *Client) ListNodes() ([]Node, error) {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
 
-	var n nodesResponse
-	_, err = c.Do(req, &n)
+	var nr nodesResponse
+	_, err = c.Do(req, &nr)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
@@ -236,6 +209,7 @@ func (c *Client) ListNodes() ([]Node, error) {
 		}
 		// we don't need to check validity
 		// as it's coming from the APIC
+		// TODO: SetSerial is not actually the same validation logic the APIC uses, rethink this.
 		_ = node.SetID(v.ID)
 		_ = node.SetSerial(v.Serial)
 		ns = append(ns, node)
