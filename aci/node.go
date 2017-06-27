@@ -3,7 +3,9 @@ package aci
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -42,8 +44,8 @@ func (n *Node) SetID(s string) error {
 		return fmt.Errorf("invalid node id: %d %v", i, err)
 	}
 	// Node ID must be between 101 and 4000
-	if i < 101 && i > 4000 {
-		return fmt.Errorf("%d is an invalid node id, must be between 101 & 4000", i)
+	if i < 101 || i > 4000 {
+		return fmt.Errorf("node id: %d is out of range, must be between 101 & 4000", i)
 	}
 	n.id = s
 	return nil
@@ -56,11 +58,13 @@ func (n *Node) Serial() string {
 
 // SetSerial validates and sets the node serial number
 func (n *Node) SetSerial(s string) error {
-	// Serial number must be less than 16 chars in length
-	if len(s) > 16 {
-		return fmt.Errorf("serial number length cannot be more than 16, %s is %d", s, len(s))
+	// A valid serial number has a maximum length of 16
+	// and contains only letters and numbers
+	validSerial := regexp.MustCompile(`^[a-zA-Z0-9]{0,16}$`)
+	if !validSerial.MatchString(s) {
+		return fmt.Errorf("invalid serial number: %s can only contain letters and numbers and have a max length of 16", s)
 	}
-	n.serial = s
+	n.serial = strings.ToUpper(s)
 	return nil
 }
 
@@ -164,7 +168,8 @@ func editNodes(c *Client, ns []Node, action string) error {
 	return err
 }
 
-func (c *Client) AddNode(n *Node) error {
+// AddNode adds a single node to the ACI fabric membership
+func (c *Client) AddNode(n Node) error {
 	var f FNContainer
 	f.Name = n.Name
 	f.NodeID = n.ID()
