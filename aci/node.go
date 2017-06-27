@@ -14,9 +14,6 @@ const (
 	listNodesPath = "api/node/class/fabricNode.json"
 )
 
-// add
-// url: https://sandboxapicdc.cisco.com/api/node/mo/uni/controller/nodeidentpol/nodep-serial1.json
-// payload{"fabricNodeIdentP":{"attributes":{"dn":"uni/controller/nodeidentpol/nodep-serial1","serial":"serial1","nodeId":"110","name":"leaf-110","role":"leaf","rn":"nodep-serial1","status":"created"},"children":[]}}
 // delete
 // url: https://sandboxapicdc.cisco.com/api/node/mo/uni/controller/nodeidentpol.json
 // payload{"fabricNodeIdentP":{"attributes":{"dn":"uni/controller/nodeidentpol/nodep-serial1","status":"deleted"},"children":[]}}
@@ -66,20 +63,6 @@ func (n *Node) SetSerial(s string) error {
 	}
 	n.serial = strings.ToUpper(s)
 	return nil
-}
-
-// NewNode instantiates a valid ACI fabric membership node
-func NewNode(name, id, serial string) (*Node, error) {
-	node := &Node{Name: name}
-	err := node.SetID(id)
-	if err != nil {
-		return node, fmt.Errorf("cannot create node: %v", err)
-	}
-	err = node.SetSerial(serial)
-	if err != nil {
-		return node, fmt.Errorf("cannot create node: %v", err)
-	}
-	return node, nil
 }
 
 // NIPContainer is a container for a NodeIdentityProfile
@@ -169,7 +152,7 @@ func editNodes(c *Client, ns []Node, action string) error {
 }
 
 // AddNode adds a single node to the ACI fabric membership
-func (c *Client) AddNode(n Node) error {
+func (c *Client) AddNode(n *Node) error {
 	var f FNContainer
 	f.Name = n.Name
 	f.NodeID = n.ID()
