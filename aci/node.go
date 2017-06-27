@@ -3,6 +3,7 @@ package aci
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
 const (
@@ -23,10 +24,58 @@ type Node struct {
 	FabricStatus string
 	Model        string
 	Name         string
-	ID           string
-	Serial       string
+	id           string
+	serial       string
 	Status       string
 	Role         string
+}
+
+// ID returns the node ID
+func (n *Node) ID() string {
+	return n.id
+}
+
+// SetID validates and sets the node id
+func (n *Node) SetID(s string) error {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return fmt.Errorf("invalid node id: %d %v", i, err)
+	}
+	// Node ID must be between 101 and 4000
+	if i < 101 && i > 4000 {
+		return fmt.Errorf("%d is an invalid node id, must be between 101 & 4000", i)
+	}
+	n.id = s
+	return nil
+}
+
+// Serial returns the node serial number
+func (n *Node) Serial() string {
+	return n.serial
+}
+
+// SetSerial validates and sets the node serial number
+func (n *Node) SetSerial(s string) error {
+	// Serial number must be less than 16 chars in length
+	if len(s) > 16 {
+		return fmt.Errorf("serial number length cannot be more than 16, %s is %d", s, len(s))
+	}
+	n.serial = s
+	return nil
+}
+
+// NewNode instantiates a valid ACI fabric membership node
+func NewNode(name, id, serial string) (*Node, error) {
+	node := &Node{Name: name}
+	err := node.SetID(id)
+	if err != nil {
+		return node, fmt.Errorf("cannot create node: %v", err)
+	}
+	err = node.SetSerial(serial)
+	if err != nil {
+		return node, fmt.Errorf("cannot create node: %v", err)
+	}
+	return node, nil
 }
 
 // NIPContainer is a container for a NodeIdentityProfile
@@ -89,8 +138,8 @@ func newNIPContainer(ns []Node, action string) NIPContainer {
 	for _, n := range ns {
 		var f FNContainer
 		f.Name = n.Name
-		f.NodeID = n.ID
-		f.Serial = n.Serial
+		f.NodeID = n.ID()
+		f.Serial = n.Serial()
 		f.Status = action
 		fs = append(fs, f)
 	}
@@ -115,16 +164,16 @@ func editNodes(c *Client, ns []Node, action string) error {
 	return err
 }
 
-func (c *Client) AddNode(n Node) error {
+func (c *Client) AddNode(n *Node) error {
 	var f FNContainer
 	f.Name = n.Name
-	f.NodeID = n.ID
-	f.Serial = n.Serial
+	f.NodeID = n.ID()
+	f.Serial = n.Serial()
 	f.Status = createModify
-	f.Dn = "uni/controller/nodeidentpol/nodep-" + n.Serial
-	f.Rn = "nodep-" + n.Serial
+	f.Dn = "uni/controller/nodeidentpol/nodep-" + n.Serial()
+	f.Rn = "nodep-" + n.Serial()
 
-	path := fmt.Sprintf(nodeAddPath, n.Serial)
+	path := fmt.Sprintf(nodeAddPath, n.Serial())
 
 	req, err := c.NewRequest(http.MethodPost, path, f)
 	if err != nil {
@@ -172,13 +221,15 @@ func (c *Client) ListNodes() ([]Node, error) {
 	for _, v := range n.NodesImdata {
 		node := Node{
 			FabricStatus: v.FabricSt,
-			ID:           v.ID,
 			Model:        v.Model,
 			Name:         v.Name,
 			Role:         v.Role,
-			Serial:       v.Serial,
 			Status:       v.Status,
 		}
+		// we don't need to check validity
+		// as it's coming from the APIC
+		_ = node.SetID(v.ID)
+		_ = node.SetSerial(v.Serial)
 		ns = append(ns, node)
 	}
 	return ns, nil
@@ -202,7 +253,7 @@ func (c *Client) ListNodes() ([]Node, error) {
 
 // Key implements the Key method of the Mapper interface
 func (n *Node) Key() string {
-	return n.Serial + n.ID + n.Name
+	return n.Serial() + n.ID() + n.Name
 }
 
 // Value implements the Value method of the Mapper interface
