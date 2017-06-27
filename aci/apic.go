@@ -84,12 +84,12 @@ func (c *Client) SetUsername(s string) {
 
 // Password returns the authentication password of the APIC client
 func (c *Client) Password() string {
-	return c.username
+	return c.password
 }
 
 // SetPassword sets the authentication password of the APIC client
 func (c *Client) SetPassword(s string) {
-	c.username = s
+	c.password = s
 }
 
 // Cookie returns the APIC authentication cookie.
@@ -182,17 +182,13 @@ type loginAttributes struct {
 	Name                   string `json:"name,omitempty"`
 	Pwd                    string `json:"pwd,omitempty"`
 	FirstLoginTime         string `json:"firstLoginTime,omitempty"`
-	FirstName              string `json:"firstName,omitempty"`
-	LastName               string `json:"lastName,omitempty"`
 	MaximumLifetimeSeconds string `json:"maximumLifetimeSeconds,omitempty"`
 	Node                   string `json:"node,omitempty"`
 	RefreshTimeoutSeconds  string `json:"refreshTimeoutSeconds,omitempty"`
 	RestTimeoutSeconds     string `json:"restTimeoutSeconds,omitempty"`
 	SessionID              string `json:"sessionId,omitempty"`
-	SiteFingerprint        string `json:"siteFingerprint,omitempty"`
 	Token                  string `json:"token,omitempty"`
 	UserName               string `json:"userName,omitempty"`
-	Version                string `json:"version,omitempty"`
 }
 
 // Login authenticates a new APIC session, setting the authentication cookie

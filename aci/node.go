@@ -7,6 +7,7 @@ import (
 
 const (
 	nodesPath     = "api/node/mo/uni/controller/nodeidentpol.json"
+	nodeAddPath   = "api/node/mo/uni/controller/nodeidentpol/nodep-%s.json" // requires node serial
 	listNodesPath = "api/node/class/fabricNode.json"
 )
 
@@ -76,6 +77,7 @@ type NodeAttributes struct {
 	NameAlias        string `json:"nameAlias,omitempty"`
 	NodeID           string `json:"nodeId,omitempty"`
 	Role             string `json:"role,omitempty"`
+	Rn               string `json:"rn,omitempty"`
 	Serial           string `json:"serial,omitempty"`
 	UID              string `json:"uid,omitempty"`
 	Vendor           string `json:"vendor,omitempty"`
@@ -110,6 +112,28 @@ func editNodes(c *Client, ns []Node, action string) error {
 	var f nodesResponse
 
 	_, err = c.Do(req, &f)
+	return err
+}
+
+func (c *Client) AddNode(n Node) error {
+	var f FNContainer
+	f.Name = n.Name
+	f.NodeID = n.ID
+	f.Serial = n.Serial
+	f.Status = createModify
+	f.Dn = "uni/controller/nodeidentpol/nodep-" + n.Serial
+	f.Rn = "nodep-" + n.Serial
+
+	path := fmt.Sprintf(nodeAddPath, n.Serial)
+
+	req, err := c.NewRequest(http.MethodPost, path, f)
+	if err != nil {
+		return err
+	}
+
+	var nr nodesResponse
+
+	_, err = c.Do(req, &nr)
 	return err
 }
 
