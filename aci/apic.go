@@ -46,8 +46,8 @@ var (
 	clientTimeout = 15 * time.Second
 )
 
-// ClientOptions specifies the client connection options
-type ClientOptions struct {
+// Config specifies the client connection options
+type Config struct {
 	Host     string
 	Username string
 	Password string
@@ -109,11 +109,11 @@ func (c *Client) SetCookie(r *http.Response) {
 }
 
 // NewClient instantiates a new APIC client
-func NewClient(o ClientOptions) (*Client, error) {
+func NewClient(cfg Config) (*Client, error) {
 	return &Client{
-		host:     &url.URL{Scheme: "https", Host: o.Host},
-		username: o.Username,
-		password: o.Password,
+		host:     &url.URL{Scheme: "https", Host: cfg.Host},
+		username: cfg.Username,
+		password: cfg.Password,
 		httpClient: &http.Client{
 			Transport: httpTransport,
 			Timeout:   clientTimeout,
