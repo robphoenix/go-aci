@@ -55,21 +55,12 @@ type Config struct {
 
 // Client manages communication with the APIC API
 type Client struct {
-	host       *url.URL
+	BaseURL    *url.URL
 	username   string
 	password   string
 	cookie     string
 	httpClient *http.Client
-}
-
-// Host returns the URL of the APIC client
-func (c *Client) Host() *url.URL {
-	return c.host
-}
-
-// SetHost sets the URL of the APIC client
-func (c *Client) SetHost(s string) {
-	c.host = &url.URL{Scheme: "https", Host: s}
+	Config     Config
 }
 
 // Username returns the authentication username of the APIC client
@@ -111,13 +102,14 @@ func (c *Client) SetCookie(r *http.Response) {
 // NewClient instantiates a new APIC client
 func NewClient(cfg Config) (*Client, error) {
 	return &Client{
-		host:     &url.URL{Scheme: "https", Host: cfg.Host},
+		BaseURL:  &url.URL{Scheme: "https", Host: cfg.Host},
 		username: cfg.Username,
 		password: cfg.Password,
 		httpClient: &http.Client{
 			Transport: httpTransport,
 			Timeout:   clientTimeout,
 		},
+		Config: cfg,
 	}, nil
 }
 
@@ -127,7 +119,7 @@ func (c *Client) NewRequest(method string, path string, body interface{}) (*http
 	if err != nil {
 		return nil, fmt.Errorf("%s %s: %v", method, path, err)
 	}
-	u := c.Host().ResolveReference(rel)
+	u := c.BaseURL.ResolveReference(rel)
 
 	var buf io.ReadWriter
 	if body != nil {
