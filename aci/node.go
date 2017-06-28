@@ -16,6 +16,7 @@ const (
 	nodeListPath        = "api/node/class/fabricNode.json"
 	nodeDN              = "uni/controller/nodeidentpol/nodep-%s" // requires node serial
 	nodeRN              = "nodep-%s"                             // requires node serial
+	nodeTDN             = "topology/pod-%s/node-%s"              // requires pod id, node id
 )
 
 // Node is an ACI fabric membership node
@@ -26,91 +27,9 @@ type Node struct {
 	Serial string
 }
 
-// NodeIdentProfContainer is a container for a NodeIdentityProfile
-type NodeIdentProfContainer struct {
-	NodeIdentityProfile `json:"fabricNodeIdentPol"`
-}
-
-// NodeIdentityProfile is a container for the node identity profile
-type NodeIdentityProfile struct {
-	NodeIdentProfAttributes `json:"attributes"`
-	Children                []*FabricNodeContainer `json:"children"`
-}
-
-// FabricNodeContainer is a container for a Fabric Node
-type FabricNodeContainer struct {
-	FabricNode `json:"fabricNodeIdentP"`
-}
-
-// NodesResponse contains the response for ACI fabric nodes requests
-type NodesResponse struct {
-	NodesImdata []NodesImdata `json:"imdata"`
-}
-
-// NodesImdata is describes the node in the nodes response structure
-type NodesImdata struct {
-	FabricNode `json:"fabricNode"`
-}
-
-// FabricNode is the node identity profile
-type FabricNode struct {
-	*FabricNodeIdentPAttributes `json:"attributes"`
-}
-
-// DecommissionNodeContainer is a container for
-// the request to decommission a fabric membership node
-type DecommissionNodeContainer struct {
-	DecommissionNode `json:"fabricRsDecommissionNode"`
-}
-
-// DecommissionNode describes the node to decommission
-type DecommissionNode struct {
-	DecommissionAttributes `json:"attributes"`
-}
-
-// DecommissionAttributes are the attributes of the node to be decomissioned
-type DecommissionAttributes struct {
-	TDN                  string `json:"tDn"`                  // "topology/pod-<podID>/node-<nodeID>"
-	Status               string `json:"status"`               // createModify
-	RemoveFromController string `json:"removeFromController"` // "true"
-}
-
-// NodeIdentProfAttributes contains all the attributes of an ACI fabric node API response
-type NodeIdentProfAttributes struct {
-	AdSt             string    `json:"adSt,omitempty"`
-	ChildAction      string    `json:"childAction,omitempty"`
-	DelayedHeartbeat string    `json:"delayedHeartbeat,omitempty"`
-	DN               string    `json:"dn,omitempty"`
-	FabricSt         string    `json:"fabricSt,omitempty"`
-	ID               string    `json:"id,omitempty"`
-	LcOwn            string    `json:"lcOwn,omitempty"`
-	ModTs            time.Time `json:"modTs,omitempty"`
-	Model            string    `json:"model,omitempty"`
-	MonPolDn         string    `json:"monPolDn,omitempty"`
-	Name             string    `json:"name,omitempty"`
-	NameAlias        string    `json:"nameAlias,omitempty"`
-	Role             string    `json:"role,omitempty"`
-	Serial           string    `json:"serial,omitempty"`
-	Status           string    `json:"status,omitempty"`
-	UID              string    `json:"uid,omitempty"`
-	Vendor           string    `json:"vendor,omitempty"`
-	Version          string    `json:"version,omitempty"`
-}
-
-// FabricNodeIdentPAttributes contains all the attributes of an ACI fabric node API request
-type FabricNodeIdentPAttributes struct {
-	DN     string `json:"dn,omitempty"`
-	Serial string `json:"serial,omitempty"`
-	NodeID string `json:"nodeId,omitempty"`
-	Name   string `json:"name,omitempty"`
-	Role   string `json:"role,omitempty"`
-	RN     string `json:"rn,omitempty"`
-	Status string `json:"status,omitempty"`
-}
-
 // String returns the string representation of an ACI node
-func (n *Node) String() string {
-	return fmt.Sprintf("%s %s %s", n.Name, n.ID, n.Serial)
+func (node *Node) String() string {
+	return fmt.Sprintf("%s %s %s", node.Name, node.ID, node.Serial)
 }
 
 // NewNode instanstatiates a valid ACI fabric membership node
@@ -145,6 +64,88 @@ func NewNode(name, nodeID, podID, serial string) (*Node, error) {
 	}, nil
 }
 
+// NodeIdentProfContainer is a container for a NodeIdentityProfile
+type NodeIdentProfContainer struct {
+	NodeIdentityProfile `json:"fabricNodeIdentPol"`
+}
+
+// NodeIdentityProfile is a container for the node identity profile
+type NodeIdentityProfile struct {
+	NodeIdentProfAttributes `json:"attributes"`
+	Children                []*FabricNodeContainer `json:"children"`
+}
+
+// NodeIdentProfAttributes contains all the attributes of an ACI fabric node API response
+type NodeIdentProfAttributes struct {
+	AdSt             string    `json:"adSt,omitempty"`
+	ChildAction      string    `json:"childAction,omitempty"`
+	DelayedHeartbeat string    `json:"delayedHeartbeat,omitempty"`
+	DN               string    `json:"dn,omitempty"`
+	FabricSt         string    `json:"fabricSt,omitempty"`
+	ID               string    `json:"id,omitempty"`
+	LcOwn            string    `json:"lcOwn,omitempty"`
+	ModTs            time.Time `json:"modTs,omitempty"`
+	Model            string    `json:"model,omitempty"`
+	MonPolDn         string    `json:"monPolDn,omitempty"`
+	Name             string    `json:"name,omitempty"`
+	NameAlias        string    `json:"nameAlias,omitempty"`
+	Role             string    `json:"role,omitempty"`
+	Serial           string    `json:"serial,omitempty"`
+	Status           string    `json:"status,omitempty"`
+	UID              string    `json:"uid,omitempty"`
+	Vendor           string    `json:"vendor,omitempty"`
+	Version          string    `json:"version,omitempty"`
+}
+
+// FabricNodeContainer is a container for a Fabric Node
+type FabricNodeContainer struct {
+	FabricNode `json:"fabricNodeIdentP"`
+}
+
+// FabricNode is the node identity profile
+type FabricNode struct {
+	*FabricNodeIdentPAttributes `json:"attributes"`
+}
+
+// FabricNodeIdentPAttributes contains all the attributes of an ACI fabric node API request
+type FabricNodeIdentPAttributes struct {
+	DN     string `json:"dn,omitempty"`
+	Serial string `json:"serial,omitempty"`
+	NodeID string `json:"nodeId,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Role   string `json:"role,omitempty"`
+	RN     string `json:"rn,omitempty"`
+	Status string `json:"status,omitempty"`
+}
+
+// NodesResponse contains the response for ACI fabric nodes requests
+type NodesResponse struct {
+	NodesImdata []NodesImdata `json:"imdata"`
+}
+
+// NodesImdata is describes the node in the nodes response structure
+type NodesImdata struct {
+	FabricNode `json:"fabricNode"`
+}
+
+// DecommissionNodeContainer is a container for
+// the request to decommission a fabric membership node
+type DecommissionNodeContainer struct {
+	DecommissionNode `json:"fabricRsDecommissionNode"`
+}
+
+// DecommissionNode describes the node to decommission
+type DecommissionNode struct {
+	DecommissionAttributes `json:"attributes"`
+}
+
+// DecommissionAttributes are the attributes of the node to be decomissioned
+type DecommissionAttributes struct {
+	TDN                  string `json:"tDn"`                  // "topology/pod-<podID>/node-<nodeID>"
+	Status               string `json:"status"`               // createModify
+	RemoveFromController string `json:"removeFromController"` // "true"
+}
+
 // NewFabricNodeContainer instantiates a FabricNodeContainer
 func NewFabricNodeContainer(node *Node, action string) *FabricNodeContainer {
 	return &FabricNodeContainer{
@@ -169,8 +170,10 @@ func NewNodeIdentProfContainer(nodes []*Node, action string) *NodeIdentProfConta
 	}
 	return &NodeIdentProfContainer{
 		NodeIdentityProfile: NodeIdentityProfile{
-			NodeIdentProfAttributes: NodeIdentProfAttributes{Status: createModify},
-			Children:                children,
+			NodeIdentProfAttributes: NodeIdentProfAttributes{
+				Status: createModify,
+			},
+			Children: children,
 		},
 	}
 }
@@ -223,7 +226,7 @@ func (c *Client) DecommissionNode(node *Node) error {
 	payload := DecommissionNodeContainer{
 		DecommissionNode: DecommissionNode{
 			DecommissionAttributes: DecommissionAttributes{
-				TDN:                  "topology/pod-" + node.PodID + "/node-" + node.ID,
+				TDN:                  fmt.Sprintf(nodeTDN, node.PodID, node.ID),
 				Status:               createModify,
 				RemoveFromController: "true",
 			},
@@ -244,11 +247,11 @@ func nodeDo(c *Client, method, URL string, payload interface{}) (NodesResponse, 
 }
 
 // Key implements the Key method of the Mapper interface
-func (n *Node) Key() string {
-	return n.Serial + n.ID + n.Name
+func (node *Node) Key() string {
+	return node.Serial + node.ID + node.Name
 }
 
 // Value implements the Value method of the Mapper interface
-func (n *Node) Value() Node {
-	return *n
+func (node *Node) Value() *Node {
+	return node
 }
