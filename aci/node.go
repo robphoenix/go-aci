@@ -13,7 +13,7 @@ const (
 	nodeAddPath         = "api/node/mo/uni/controller/nodeidentpol/nodep-%s.json" // requires node serial
 	nodeDeletePath      = "api/node/mo/uni/controller/nodeidentpol.json"
 	nodeDecomissionPath = "api/node/mo/uni/fabric/outofsvc.json"
-	listNodesPath       = "api/node/class/fabricNode.json"
+	nodeListPath        = "api/node/class/fabricNode.json"
 	nodeDN              = "uni/controller/nodeidentpol/nodep-%s" // requires node serial
 	nodeRN              = "nodep-%s"                             // requires node serial
 )
@@ -201,7 +201,7 @@ func (c *Client) DeleteNodes(ns []*Node) error {
 
 // ListNodes lists all node members of the ACI fabric
 func (c *Client) ListNodes() ([]*Node, error) {
-	nr, err := nodeDo(c, http.MethodGet, listNodesPath, nil)
+	nr, err := nodeDo(c, http.MethodGet, nodeListPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
