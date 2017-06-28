@@ -22,46 +22,29 @@ type Node struct {
 	FabricStatus string
 	Model        string
 	Name         string
-	id           string
-	serial       string
+	ID           string
+	Serial       string
 	Status       string
 	Role         string
 }
 
-// ID returns the node ID
-func (n *Node) ID() string {
-	return n.id
-}
-
-// SetID validates and sets the node id
-func (n *Node) SetID(s string) error {
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		return fmt.Errorf("invalid node id: %s %v", s, err)
-	}
-	// Node ID must be between 101 and 4000
-	if i < 101 || i > 4000 {
-		return fmt.Errorf("node id: %d is out of range, must be between 101 & 4000", i)
-	}
-	n.id = s
-	return nil
-}
-
-// Serial returns the node serial number
-func (n *Node) Serial() string {
-	return n.serial
-}
-
-// SetSerial validates and sets the node serial number
-func (n *Node) SetSerial(s string) error {
+// NewNode instanstatiates a valid ACI fabric membership node
+func NewNode(name, id, serial string) (*Node, error) {
 	// A valid serial number has a maximum length of 16
 	// and contains only letters and numbers
 	validSerial := regexp.MustCompile(`^[a-zA-Z0-9]{0,16}$`)
-	if !validSerial.MatchString(s) {
-		return fmt.Errorf("invalid serial number: %s can only contain letters and numbers and have a max length of 16", s)
+	if !validSerial.MatchString(serial) {
+		return nil, fmt.Errorf("invalid serial number: %s can only contain letters and numbers and have a max length of 16", serial)
 	}
-	n.serial = s
-	return nil
+	// Node ID must be between 101 and 4000
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return fmt.Errorf("invalid node id: %s %v", id, err)
+	}
+	if i < 101 || i > 4000 {
+		return fmt.Errorf("out of range: %d node id must be between 101 & 4000", i)
+	}
+	return &Node{Name: name, ID: id, Serial: serial}, nil
 }
 
 // NIPContainer is a container for a NodeIdentityProfile
@@ -122,11 +105,11 @@ type NodeAttributes struct {
 func newFNContainer(n Node, action string) FNContainer {
 	var f FNContainer
 	f.Name = n.Name
-	f.NodeID = n.ID()
-	f.Serial = n.Serial()
+	f.NodeID = n.ID
+	f.Serial = n.Serial
 	f.Status = action
-	f.DN = nodeDN + n.Serial()
-	f.RN = nodeRN + n.Serial()
+	f.DN = nodeDN + n.Serial
+	f.RN = nodeRN + n.Serial
 	return f
 }
 
@@ -207,12 +190,9 @@ func (c *Client) ListNodes() ([]Node, error) {
 			Name:         v.Name,
 			Role:         v.Role,
 			Status:       v.Status,
+			ID:           v.ID,
+			Serial:       v.Serial,
 		}
-		// we don't need to check validity
-		// as it's coming from the APIC
-		// TODO: SetSerial is not actually the same validation logic the APIC uses, rethink this.
-		_ = node.SetID(v.ID)
-		_ = node.SetSerial(v.Serial)
 		ns = append(ns, node)
 	}
 	return ns, nil
@@ -235,7 +215,7 @@ func (c *Client) ListNodes() ([]Node, error) {
 
 // Key implements the Key method of the Mapper interface
 func (n *Node) Key() string {
-	return n.Serial() + n.ID() + n.Name
+	return n.Serial + n.ID + n.Name
 }
 
 // Value implements the Value method of the Mapper interface
