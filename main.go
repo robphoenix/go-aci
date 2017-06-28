@@ -27,23 +27,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	// create node
-	name := "wedname07"
-	serial := "wedser07"
-	nodeID := "3007"
-	podID := "1"
-	node, err := client.FabricMembership.NewNode(name, nodeID, podID, serial)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-
-	// add node
-	err = client.FabricMembership.AddNode(node)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
+	// // create node
+	// name := "wedname07"
+	// serial := "wedser07"
+	// nodeID := "3007"
+	// podID := "1"
+	// node, err := client.FabricMembership.NewNode(name, nodeID, podID, serial)
+	// if err != nil {
+	//         log.Fatal(err)
+	//         os.Exit(1)
+	// }
+	//
+	// // add node
+	// err = client.FabricMembership.AddNode(node)
+	// if err != nil {
+	//         log.Fatal(err)
+	//         os.Exit(1)
+	// }
 
 	// // delete node
 	// err = client.FabricMembership.DeleteNode(node)
