@@ -8,17 +8,6 @@ import (
 	"time"
 )
 
-const (
-	nodesPath           = "api/node/mo/uni/controller/nodeidentpol.json"
-	nodeAddPath         = "api/node/mo/uni/controller/nodeidentpol/nodep-%s.json" // requires node serial
-	nodeDeletePath      = "api/node/mo/uni/controller/nodeidentpol.json"
-	nodeDecomissionPath = "api/node/mo/uni/fabric/outofsvc.json"
-	nodeListPath        = "api/node/class/fabricNode.json"
-	nodeDN              = "uni/controller/nodeidentpol/nodep-%s" // requires node serial
-	nodeRN              = "nodep-%s"                             // requires node serial
-	nodeTDN             = "topology/pod-%s/node-%s"              // requires pod id, node id
-)
-
 // Node is an ACI fabric membership node
 type Node struct {
 	ID     string
@@ -32,8 +21,18 @@ func (node *Node) String() string {
 	return fmt.Sprintf("%s %s %s", node.Name, node.ID, node.Serial)
 }
 
+// Key implements the Key method of the Mapper interface
+func (node *Node) Key() string {
+	return node.Serial + node.ID + node.Name
+}
+
+// Value implements the Value method of the Mapper interface
+func (node *Node) Value() *Node {
+	return node
+}
+
 // NewNode instanstatiates a valid ACI fabric membership node
-func NewNode(name, nodeID, podID, serial string) (*Node, error) {
+func (s *FabricMembershipService) NewNode(name, nodeID, podID, serial string) (*Node, error) {
 	// A valid serial number has a maximum length of 16
 	// and contains only letters and numbers
 	validSerial := regexp.MustCompile(`^[a-zA-Z0-9]{0,16}$`)
@@ -63,6 +62,17 @@ func NewNode(name, nodeID, podID, serial string) (*Node, error) {
 		Serial: serial,
 	}, nil
 }
+
+const (
+	nodesPath           = "api/node/mo/uni/controller/nodeidentpol.json"
+	nodeAddPath         = "api/node/mo/uni/controller/nodeidentpol/nodep-%s.json" // requires node serial
+	nodeDeletePath      = "api/node/mo/uni/controller/nodeidentpol.json"
+	nodeDecomissionPath = "api/node/mo/uni/fabric/outofsvc.json"
+	nodeListPath        = "api/node/class/fabricNode.json"
+	nodeDN              = "uni/controller/nodeidentpol/nodep-%s" // requires node serial
+	nodeRN              = "nodep-%s"                             // requires node serial
+	nodeTDN             = "topology/pod-%s/node-%s"              // requires pod id, node id
+)
 
 // NodeIdentProfContainer is a container for a NodeIdentityProfile
 type NodeIdentProfContainer struct {
@@ -183,33 +193,37 @@ func NewNodeIdentProfContainer(nodes []*Node, action string) *NodeIdentProfConta
 	}
 }
 
+// FabricMembershipService handles communication with the fabric membership related
+// methods of the APIC API.
+type FabricMembershipService service
+
 // AddNode adds a single node to the ACI fabric membership
-func (c *Client) AddNode(node *Node) error {
-	_, err := nodeDo(c, http.MethodPost, fmt.Sprintf(nodeAddPath, node.Serial), NewFabricNodeContainer(node, createModify))
+func (s *FabricMembershipService) AddNode(node *Node) error {
+	_, err := nodeDo(s, http.MethodPost, fmt.Sprintf(nodeAddPath, node.Serial), NewFabricNodeContainer(node, createModify))
 	return err
 }
 
 // DeleteNode deletes a fabric membership node
-func (c *Client) DeleteNode(node *Node) error {
-	_, err := nodeDo(c, http.MethodPost, nodeDeletePath, NewFabricNodeContainer(node, delete))
+func (s *FabricMembershipService) DeleteNode(node *Node) error {
+	_, err := nodeDo(s, http.MethodPost, nodeDeletePath, NewFabricNodeContainer(node, delete))
 	return err
 }
 
 // AddNodes adds a slice of nodes to the ACI fabric membership
-func (c *Client) AddNodes(ns []*Node) error {
-	_, err := nodeDo(c, http.MethodPost, nodesPath, NewNodeIdentProfContainer(ns, createModify))
+func (s *FabricMembershipService) AddNodes(ns []*Node) error {
+	_, err := nodeDo(s, http.MethodPost, nodesPath, NewNodeIdentProfContainer(ns, createModify))
 	return err
 }
 
 // DeleteNodes deletes a slice of nodes from the ACI fabric membership
-func (c *Client) DeleteNodes(ns []*Node) error {
-	_, err := nodeDo(c, http.MethodPost, nodesPath, NewNodeIdentProfContainer(ns, delete))
+func (s *FabricMembershipService) DeleteNodes(ns []*Node) error {
+	_, err := nodeDo(s, http.MethodPost, nodesPath, NewNodeIdentProfContainer(ns, delete))
 	return err
 }
 
 // ListNodes lists all node members of the ACI fabric
-func (c *Client) ListNodes() ([]*Node, error) {
-	nr, err := nodeDo(c, http.MethodGet, nodeListPath, nil)
+func (s *FabricMembershipService) ListNodes() ([]*Node, error) {
+	nr, err := nodeDo(s, http.MethodGet, nodeListPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
@@ -227,7 +241,7 @@ func (c *Client) ListNodes() ([]*Node, error) {
 }
 
 // DecommissionNode decommisions a fabric membership node
-func (c *Client) DecommissionNode(node *Node) error {
+func (s *FabricMembershipService) DecommissionNode(node *Node) error {
 	payload := DecommissionNodeContainer{
 		DecommissionNode: DecommissionNode{
 			DecommissionAttributes: DecommissionAttributes{
@@ -237,26 +251,16 @@ func (c *Client) DecommissionNode(node *Node) error {
 			},
 		},
 	}
-	_, err := nodeDo(c, http.MethodPost, nodeDecomissionPath, payload)
+	_, err := nodeDo(s, http.MethodPost, nodeDecomissionPath, payload)
 	return err
 }
 
-func nodeDo(c *Client, method, URL string, payload interface{}) (NodesResponse, error) {
+func nodeDo(s *FabricMembershipService, method, URL string, payload interface{}) (NodesResponse, error) {
 	var nr NodesResponse
-	req, err := c.NewRequest(method, URL, payload)
+	req, err := s.client.NewRequest(method, URL, payload)
 	if err != nil {
 		return nr, err
 	}
-	_, err = c.Do(req, &nr)
+	_, err = s.client.Do(req, &nr)
 	return nr, err
-}
-
-// Key implements the Key method of the Mapper interface
-func (node *Node) Key() string {
-	return node.Serial + node.ID + node.Name
-}
-
-// Value implements the Value method of the Mapper interface
-func (node *Node) Value() *Node {
-	return node
 }

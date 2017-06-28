@@ -61,6 +61,13 @@ type Client struct {
 	cookie     string
 	httpClient *http.Client
 	Config     Config
+
+	// Services used for talking to different parts of the APIC API
+	FabricMembership *FabricMembershipService
+}
+
+type service struct {
+	client *Client
 }
 
 // Username returns the authentication username of the APIC client
@@ -100,8 +107,8 @@ func (c *Client) SetCookie(r *http.Response) {
 }
 
 // NewClient instantiates a new APIC client
-func NewClient(cfg Config) (*Client, error) {
-	return &Client{
+func NewClient(cfg Config) *Client {
+	c := &Client{
 		BaseURL:  &url.URL{Scheme: "https", Host: cfg.Host},
 		username: cfg.Username,
 		password: cfg.Password,
@@ -110,7 +117,10 @@ func NewClient(cfg Config) (*Client, error) {
 			Timeout:   clientTimeout,
 		},
 		Config: cfg,
-	}, nil
+	}
+
+	c.FabricMembership = &FabricMembershipService{client: c}
+	return c
 }
 
 // NewRequest forms an http request for use with an APIC client
