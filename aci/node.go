@@ -69,10 +69,25 @@ type NodeIdentProfContainer struct {
 	NodeIdentityProfile `json:"fabricNodeIdentPol"`
 }
 
-// NodeIdentityProfile is a container for the node identity profile
+// NodeIdentityProfile describes the node identity profile
 type NodeIdentityProfile struct {
 	NodeIdentProfAttributes `json:"attributes"`
 	Children                []*FabricNodeContainer `json:"children"`
+}
+
+// NodesResponse contains the response for ACI fabric nodes requests
+type NodesResponse struct {
+	NodesImdata []NodesImdata `json:"imdata"`
+}
+
+// NodesImdata describes the node in the nodes response structure
+type NodesImdata struct {
+	FabricNode `json:"fabricNode"`
+}
+
+// FabricNode is the node identity profile
+type FabricNode struct {
+	*NodeIdentProfAttributes `json:"attributes"`
 }
 
 // NodeIdentProfAttributes contains all the attributes of an ACI fabric node API response
@@ -97,13 +112,13 @@ type NodeIdentProfAttributes struct {
 	Version          string    `json:"version,omitempty"`
 }
 
-// FabricNodeContainer is a container for a Fabric Node
+// FabricNodeContainer is a container for a Fabric Node Identity Profile
 type FabricNodeContainer struct {
-	FabricNode `json:"fabricNodeIdentP"`
+	FabricNodeIdentP `json:"fabricNodeIdentP"`
 }
 
-// FabricNode is the node identity profile
-type FabricNode struct {
+// FabricNodeIdentP is the node identity profile
+type FabricNodeIdentP struct {
 	*FabricNodeIdentPAttributes `json:"attributes"`
 }
 
@@ -116,16 +131,6 @@ type FabricNodeIdentPAttributes struct {
 	Role   string `json:"role,omitempty"`
 	RN     string `json:"rn,omitempty"`
 	Status string `json:"status,omitempty"`
-}
-
-// NodesResponse contains the response for ACI fabric nodes requests
-type NodesResponse struct {
-	NodesImdata []NodesImdata `json:"imdata"`
-}
-
-// NodesImdata is describes the node in the nodes response structure
-type NodesImdata struct {
-	FabricNode `json:"fabricNode"`
 }
 
 // DecommissionNodeContainer is a container for
@@ -149,7 +154,7 @@ type DecommissionAttributes struct {
 // NewFabricNodeContainer instantiates a FabricNodeContainer
 func NewFabricNodeContainer(node *Node, action string) *FabricNodeContainer {
 	return &FabricNodeContainer{
-		FabricNode: FabricNode{
+		FabricNodeIdentP: FabricNodeIdentP{
 			FabricNodeIdentPAttributes: &FabricNodeIdentPAttributes{
 				Status: action,
 				DN:     fmt.Sprintf(nodeDN, node.Serial),
@@ -213,7 +218,7 @@ func (c *Client) ListNodes() ([]*Node, error) {
 	for _, node := range nr.NodesImdata {
 		n := &Node{
 			Name:   node.Name,
-			ID:     node.NodeID,
+			ID:     node.ID,
 			Serial: node.Serial,
 		}
 		ns = append(ns, n)
