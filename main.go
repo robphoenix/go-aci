@@ -11,14 +11,14 @@ import (
 func main() {
 
 	// set client options
-	opts := aci.ClientOptions{
+	cfg := aci.Config{
 		Host:     "sandboxapicdc.cisco.com",
 		Username: "admin",
 		Password: "ciscopsdt",
 	}
 
 	// create client
-	client, err := aci.NewClient(opts)
+	client, err := aci.NewClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -31,26 +31,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	// create node
-	// n := aci.Node{Name: "IAMNODE03"}
-	// err = n.SetID("1252")
+	// // create node
+	// name := "wedname06"
+	// serial := "wedser06"
+	// nodeID := "3006"
+	// podID := "1"
+	// node, err := aci.NewNode(name, nodeID, podID, serial)
 	// if err != nil {
 	//         log.Fatal(err)
 	//         os.Exit(1)
 	// }
-	n := aci.Node{}
-	err = n.SetSerial("serial1")
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-
-	// add node
-	err = client.DeleteNode(n)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
+	//
+	// // add node
+	// err = client.AddNode(node)
+	// if err != nil {
+	//         log.Fatal(err)
+	//         os.Exit(1)
+	// }
+	//
+	// // delete node
+	// err = client.DeleteNode(node)
+	// if err != nil {
+	//         log.Fatal(err)
+	//         os.Exit(1)
+	// }
 
 	// list nodes
 	nodes, err := client.ListNodes()
