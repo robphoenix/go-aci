@@ -1,6 +1,7 @@
 package aci
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -198,32 +199,32 @@ func NewNodeIdentProfContainer(nodes []*Node, action string) *NodeIdentProfConta
 type FabricMembershipService service
 
 // AddNode adds a single node to the ACI fabric membership
-func (s *FabricMembershipService) AddNode(node *Node) error {
-	_, err := nodeDo(s, http.MethodPost, fmt.Sprintf(nodeAddPath, node.Serial), NewFabricNodeContainer(node, createModify))
+func (s *FabricMembershipService) AddNode(ctx context.Context, node *Node) error {
+	_, err := nodeDo(ctx, s, http.MethodPost, fmt.Sprintf(nodeAddPath, node.Serial), NewFabricNodeContainer(node, createModify))
 	return err
 }
 
 // DeleteNode deletes a fabric membership node
-func (s *FabricMembershipService) DeleteNode(node *Node) error {
-	_, err := nodeDo(s, http.MethodPost, nodeDeletePath, NewFabricNodeContainer(node, delete))
+func (s *FabricMembershipService) DeleteNode(ctx context.Context, node *Node) error {
+	_, err := nodeDo(ctx, s, http.MethodPost, nodeDeletePath, NewFabricNodeContainer(node, delete))
 	return err
 }
 
 // AddNodes adds a slice of nodes to the ACI fabric membership
-func (s *FabricMembershipService) AddNodes(ns []*Node) error {
-	_, err := nodeDo(s, http.MethodPost, nodesPath, NewNodeIdentProfContainer(ns, createModify))
+func (s *FabricMembershipService) AddNodes(ctx context.Context, ns []*Node) error {
+	_, err := nodeDo(ctx, s, http.MethodPost, nodesPath, NewNodeIdentProfContainer(ns, createModify))
 	return err
 }
 
 // DeleteNodes deletes a slice of nodes from the ACI fabric membership
-func (s *FabricMembershipService) DeleteNodes(ns []*Node) error {
-	_, err := nodeDo(s, http.MethodPost, nodesPath, NewNodeIdentProfContainer(ns, delete))
+func (s *FabricMembershipService) DeleteNodes(ctx context.Context, ns []*Node) error {
+	_, err := nodeDo(ctx, s, http.MethodPost, nodesPath, NewNodeIdentProfContainer(ns, delete))
 	return err
 }
 
 // ListNodes lists all node members of the ACI fabric
-func (s *FabricMembershipService) ListNodes() ([]*Node, error) {
-	nr, err := nodeDo(s, http.MethodGet, nodeListPath, nil)
+func (s *FabricMembershipService) ListNodes(ctx context.Context) ([]*Node, error) {
+	nr, err := nodeDo(ctx, s, http.MethodGet, nodeListPath, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
@@ -241,7 +242,7 @@ func (s *FabricMembershipService) ListNodes() ([]*Node, error) {
 }
 
 // DecommissionNode decommisions a fabric membership node
-func (s *FabricMembershipService) DecommissionNode(node *Node) error {
+func (s *FabricMembershipService) DecommissionNode(ctx context.Context, node *Node) error {
 	payload := DecommissionNodeContainer{
 		DecommissionNode: DecommissionNode{
 			DecommissionAttributes: DecommissionAttributes{
@@ -251,16 +252,16 @@ func (s *FabricMembershipService) DecommissionNode(node *Node) error {
 			},
 		},
 	}
-	_, err := nodeDo(s, http.MethodPost, nodeDecomissionPath, payload)
+	_, err := nodeDo(ctx, s, http.MethodPost, nodeDecomissionPath, payload)
 	return err
 }
 
-func nodeDo(s *FabricMembershipService, method, URL string, payload interface{}) (NodesResponse, error) {
+func nodeDo(ctx context.Context, s *FabricMembershipService, method, URL string, payload interface{}) (NodesResponse, error) {
 	var nr NodesResponse
 	req, err := s.client.NewRequest(method, URL, payload)
 	if err != nil {
 		return nr, err
 	}
-	_, err = s.client.Do(req, &nr)
+	_, err = s.client.Do(ctx, req, &nr)
 	return nr, err
 }

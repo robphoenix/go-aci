@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,8 @@ import (
 )
 
 func main() {
+
+	ctx := context.Background()
 
 	// set config options
 	cfg := aci.Config{
@@ -21,7 +24,7 @@ func main() {
 	client := aci.NewClient(cfg)
 
 	// login
-	err := client.Login()
+	err := client.Login(ctx)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -39,21 +42,21 @@ func main() {
 	}
 
 	// add node
-	err = client.FabricMembership.AddNode(node)
+	err = client.FabricMembership.AddNode(ctx, node)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
 
 	// // delete node
-	// err = client.FabricMembership.DeleteNode(node)
+	// err = client.FabricMembership.DeleteNode(ctx, node)
 	// if err != nil {
 	//         log.Fatal(err)
 	//         os.Exit(1)
 	// }
 
 	// list nodes
-	nodes, err := client.FabricMembership.ListNodes()
+	nodes, err := client.FabricMembership.ListNodes(ctx)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)

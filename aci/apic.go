@@ -2,6 +2,7 @@ package aci
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -151,10 +152,19 @@ func (c *Client) NewRequest(method string, path string, body interface{}) (*http
 }
 
 // Do performs APIC client http requests
-func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
+func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
+	req = req.WithContext(ctx)
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%v %v: %d %v", req.Method, req.URL.String(), resp.StatusCode, err)
+		// If we got an error, and the context has been canceled,
+		// the context's error is probably more useful.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			return nil, fmt.Errorf("%v %v: %d %v", req.Method, req.URL.String(), resp.StatusCode, err)
+		}
 	}
 	defer resp.Body.Close()
 	err = CheckResponse(resp)
@@ -194,7 +204,7 @@ type loginAttributes struct {
 }
 
 // Login authenticates a new APIC session, setting the authentication cookie
-func (c *Client) Login() error {
+func (c *Client) Login(ctx context.Context) error {
 	var lr loginRequest
 	lr.Name = c.Username()
 	lr.Pwd = c.Password()
@@ -205,7 +215,7 @@ func (c *Client) Login() error {
 	}
 
 	var la loginAttributes
-	resp, err := c.Do(req, &la)
+	resp, err := c.Do(ctx, req, &la)
 	if err != nil {
 		return err
 	}
