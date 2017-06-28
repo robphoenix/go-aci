@@ -1,6 +1,9 @@
 # go-aci
 Go API wrapper for Cisco ACI
 
+[![GoDoc](https://godoc.org/github.com/robphoenix/go-aci/aci?status.svg)](http://godoc.org/github.com/robphoenix/go-aci/aci)
+[![Go Report Card](https://goreportcard.com/badge/github.com/robphoenix/go-aci)](https://goreportcard.com/report/github.com/robphoenix/go-aci)
+
 ```go
 package main
 
@@ -67,3 +70,4 @@ func main() {
 		fmt.Printf("%d: %s\n", i+1, node)
 	}
 }
+```
