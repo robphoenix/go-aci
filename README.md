@@ -14,7 +14,7 @@ import (
 
 func main() {
 
-	// set client options
+	// set config options
 	cfg := aci.Config{
 		Host:     "sandboxapicdc.cisco.com",
 		Username: "admin",
@@ -22,14 +22,10 @@ func main() {
 	}
 
 	// create client
-	client, err := aci.NewClient(cfg)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
+	client := aci.NewClient(cfg)
 
-	// authenticate
-	err = client.Login()
+	// login
+	err := client.Login()
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -40,29 +36,28 @@ func main() {
 	serial := "FOC0849N1BD"
 	nodeID := "101"
 	podID := "1"
-
-	node, err := aci.NewNode(name, nodeID, podID, serial)
+	node, err := client.FabricMembership.NewNode(name, nodeID, podID, serial)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
 
 	// add node
-	err = client.AddNode(node)
+	err = client.FabricMembership.AddNode(node)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
 
 	// // delete node
-	// err = client.DeleteNode(node)
+	// err = client.FabricMembership.DeleteNode(node)
 	// if err != nil {
 	//         log.Fatal(err)
 	//         os.Exit(1)
 	// }
 
 	// list nodes
-	nodes, err := client.ListNodes()
+	nodes, err := client.FabricMembership.ListNodes()
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -72,4 +67,3 @@ func main() {
 		fmt.Printf("%d: %s\n", i+1, node)
 	}
 }
-```
