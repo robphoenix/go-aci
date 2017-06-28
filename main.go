@@ -48,7 +48,7 @@ func main() {
 	//         log.Fatal(err)
 	//         os.Exit(1)
 	// }
-	//
+
 	// // delete node
 	// err = client.DeleteNode(node)
 	// if err != nil {
@@ -62,7 +62,8 @@ func main() {
 		log.Fatal(err)
 		os.Exit(1)
 	}
-	for _, v := range nodes {
-		fmt.Printf("v = %+v\n", v)
+
+	for i, node := range nodes {
+		fmt.Printf("%d: %s\n", i+1, node)
 	}
 }
