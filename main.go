@@ -3,33 +3,62 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/robphoenix/go-aci/aci"
 )
 
 func main() {
-	apicURL := "sandboxapicdc.cisco.com"
-	apicUser := "admin"
-	apicPwd := "ciscopsdt"
 
-	apicClient, err := aci.NewClient(apicURL, apicUser, apicPwd)
+	// set client options
+	opts := aci.ClientOptions{
+		Host:     "sandboxapicdc.cisco.com",
+		Username: "admin",
+		Password: "ciscopsdt",
+	}
+
+	// create client
+	client, err := aci.NewClient(opts)
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
-	err = apicClient.Login()
+
+	// login
+	err = client.Login()
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
-	// vrf := aci.VRF{Name: "Jo_Cox", Tenant: "CORBYN"}
-	// err = aci.CreateVRF(apicClient, vrf)
+
+	// create node
+	// n := aci.Node{Name: "IAMNODE03"}
+	// err = n.SetID("1252")
 	// if err != nil {
 	//         log.Fatal(err)
+	//         os.Exit(1)
 	// }
-	vrfs, err := aci.ListVRFs(apicClient, "CORBYN")
+	n := aci.Node{}
+	err = n.SetSerial("serial1")
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
-	for _, v := range vrfs {
+
+	// add node
+	err = client.DeleteNode(n)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	// list nodes
+	nodes, err := client.ListNodes()
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+	for _, v := range nodes {
 		fmt.Printf("v = %+v\n", v)
 	}
 }

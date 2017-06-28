@@ -8,12 +8,13 @@ import (
 )
 
 const (
-	nodesPath      = "api/node/mo/uni/controller/nodeidentpol.json"
-	nodeAddPath    = "api/node/mo/uni/controller/nodeidentpol/nodep-%s.json" // requires node serial
-	nodeDeletePath = "api/node/mo/uni/controller/nodeidentpol.json"
-	listNodesPath  = "api/node/class/fabricNode.json"
-	nodeDN         = "uni/controller/nodeidentpol/nodep-"
-	nodeRN         = "nodep-"
+	nodesPath           = "api/node/mo/uni/controller/nodeidentpol.json"
+	nodeAddPath         = "api/node/mo/uni/controller/nodeidentpol/nodep-%s.json" // requires node serial
+	nodeDeletePath      = "api/node/mo/uni/controller/nodeidentpol.json"
+	nodeDecomissionPath = "api/node/mo/uni/fabric/outofsvc.json"
+	listNodesPath       = "api/node/class/fabricNode.json"
+	nodeDN              = "uni/controller/nodeidentpol/nodep-"
+	nodeRN              = "nodep-"
 )
 
 // Node is a member of an ACI fabric
@@ -36,7 +37,7 @@ func (n *Node) ID() string {
 func (n *Node) SetID(s string) error {
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		return fmt.Errorf("invalid node id: %d %v", i, err)
+		return fmt.Errorf("invalid node id: %s %v", s, err)
 	}
 	// Node ID must be between 101 and 4000
 	if i < 101 || i > 4000 {
@@ -219,7 +220,6 @@ func (c *Client) ListNodes() ([]Node, error) {
 
 // func (c *Client) decomissionNode() error {
 // https://supportforums.cisco.com/discussion/13296271/decommissioning-fabric-nodes-api
-// url := "https://sandboxapicdc.cisco.com/api/node/mo/uni/fabric/outofsvc.json"
 // {
 //   "fabricRsDecommissionNode": {
 //     "attributes": {
