@@ -8,9 +8,9 @@ Go API wrapper for Cisco ACI
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/robphoenix/go-aci/aci"
 )
@@ -18,19 +18,23 @@ import (
 func main() {
 
 	// create client
-	client := aci.NewClient(aci.Config{
+	client, err := aci.NewClient(aci.Config{
 		Host:     "sandboxapicdc.cisco.com",
 		Username: "admin",
 		Password: "ciscopsdt",
 	})
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	ctx := context.Background()
 
 	// login
-	err := client.Login(ctx)
+	err = client.Login(ctx)
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
+		return
 	}
 
 	// create node
@@ -42,28 +46,28 @@ func main() {
 	)
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
+		return
 	}
 
 	// add node
 	err = client.FabricMembership.Add(ctx, node)
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
+		return
 	}
 
 	// // delete node
 	// err = client.FabricMembership.Delete(ctx, node)
 	// if err != nil {
 	//         log.Fatal(err)
-	//         os.Exit(1)
+	//         return
 	// }
 
 	// list nodes
 	nodes, err := client.FabricMembership.List(ctx)
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
+		return
 	}
 
 	for i, node := range nodes {

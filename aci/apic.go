@@ -108,7 +108,16 @@ func (c *Client) SetCookie(r *http.Response) {
 }
 
 // NewClient instantiates a new APIC client
-func NewClient(cfg Config) *Client {
+func NewClient(cfg Config) (*Client, error) {
+	if cfg.Host == "" {
+		return nil, fmt.Errorf("no URL provided")
+	}
+	if cfg.Username == "" {
+		return nil, fmt.Errorf("no username provided")
+	}
+	if cfg.Password == "" {
+		return nil, fmt.Errorf("no password provided")
+	}
 	c := &Client{
 		BaseURL:  &url.URL{Scheme: "https", Host: cfg.Host},
 		username: cfg.Username,
@@ -121,7 +130,8 @@ func NewClient(cfg Config) *Client {
 	}
 
 	c.FabricMembership = &FabricMembershipService{client: c}
-	return c
+
+	return c, nil
 }
 
 // NewRequest forms an http request for use with an APIC client
