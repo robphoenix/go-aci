@@ -65,6 +65,7 @@ type Client struct {
 
 	// Services used for talking to different parts of the APIC API
 	FabricMembership *FabricMembershipService
+	Geolocation      *GeolocationService
 }
 
 type service struct {
@@ -130,6 +131,7 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	c.FabricMembership = &FabricMembershipService{client: c}
+	c.Geolocation = &GeolocationService{client: c}
 
 	return c, nil
 }
@@ -176,14 +178,21 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 			return nil, fmt.Errorf("%v %v: %d %v", req.Method, req.URL.String(), resp.StatusCode, err)
 		}
 	}
+
 	defer resp.Body.Close()
+
 	err = CheckResponse(resp)
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
 		return resp, err
 	}
+
 	err = json.NewDecoder(resp.Body).Decode(v)
+	if err == io.EOF {
+		err = nil // ignore EOF errors caused by empty response body
+	}
+
 	return resp, err
 }
 
