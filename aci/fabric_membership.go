@@ -135,28 +135,60 @@ func (s *FabricMembershipService) New(name, nodeID, podID, serial string) (*Node
 }
 
 // Add adds a single node to the ACI fabric membership
-func (s *FabricMembershipService) Add(ctx context.Context, n *Node) error {
+func (s *FabricMembershipService) Add(ctx context.Context, n *Node) (NodesResponse, error) {
 	path := fmt.Sprintf("api/node/mo/uni/controller/nodeidentpol/nodep-%s.json", n.Serial)
-	_, err := requestResponse(ctx, s, http.MethodPost, path, newFabricNodeContainer(n, createModify))
-	return err
+
+	var nr NodesResponse
+
+	req, err := s.client.NewRequest(http.MethodPost, path, newFabricNodeContainer(n, createModify))
+	if err != nil {
+		return nr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &nr)
+	if err != nil {
+		return nr, err
+	}
+
+	return nr, nil
 }
 
 // Delete deletes a fabric membership node
-func (s *FabricMembershipService) Delete(ctx context.Context, n *Node) error {
+func (s *FabricMembershipService) Delete(ctx context.Context, n *Node) (NodesResponse, error) {
 	path := "api/node/mo/uni/controller/nodeidentpol.json"
-	_, err := requestResponse(ctx, s, http.MethodPost, path, newFabricNodeContainer(n, delete))
-	return err
+
+	var nr NodesResponse
+
+	req, err := s.client.NewRequest(http.MethodPost, path, newFabricNodeContainer(n, delete))
+	if err != nil {
+		return nr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &nr)
+	if err != nil {
+		return nr, err
+	}
+
+	return nr, nil
 }
 
 // List lists all node members of the ACI fabric
 func (s *FabricMembershipService) List(ctx context.Context) ([]*Node, error) {
 	path := "api/node/class/fabricNode.json"
-	nr, err := requestResponse(ctx, s, http.MethodGet, path, nil)
+
+	var ns []*Node
+	var nr NodesResponse
+
+	req, err := s.client.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
 
-	var ns []*Node
+	_, err = s.client.Do(ctx, req, &nr)
+	if err != nil {
+		return nil, fmt.Errorf("list nodes: %v", err)
+	}
+
 	for _, node := range nr.NodesImdata {
 		n := &Node{
 			Name:   node.Name,
@@ -187,7 +219,7 @@ type DecommissionAttributes struct {
 }
 
 // Decommission decommisions a fabric membership node
-func (s *FabricMembershipService) Decommission(ctx context.Context, node *Node) error {
+func (s *FabricMembershipService) Decommission(ctx context.Context, node *Node) (NodesResponse, error) {
 	tdn := fmt.Sprintf("topology/pod-%s/node-%s", node.PodID, node.ID)
 	payload := DecommissionNodeContainer{
 		DecommissionNode: DecommissionNode{
@@ -199,16 +231,17 @@ func (s *FabricMembershipService) Decommission(ctx context.Context, node *Node) 
 		},
 	}
 	path := "api/node/mo/uni/fabric/outofsvc.json"
-	_, err := requestResponse(ctx, s, http.MethodPost, path, payload)
-	return err
-}
 
-func requestResponse(ctx context.Context, s *FabricMembershipService, method, URL string, payload interface{}) (NodesResponse, error) {
 	var nr NodesResponse
-	req, err := s.client.NewRequest(method, URL, payload)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return nr, err
 	}
+
 	_, err = s.client.Do(ctx, req, &nr)
-	return nr, err
+	if err != nil {
+		return nr, err
+	}
+	return nr, nil
 }
