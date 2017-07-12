@@ -1,7 +1,10 @@
 package aci
 
+import "time"
+
 var (
-	addGeoSitePath = "api/node/mo/uni/fabric/site-%s.json" // geo-site name
+	addGeoSitePath      = "api/node/mo/uni/fabric/site-%s.json" // geo-site name
+	listGeolocationPath = "api/node/class/geoSite.json?rsp-subtree=full"
 )
 
 // Site ...
@@ -115,6 +118,89 @@ type GeoAttrs struct {
 	Status string `json:"status"`
 }
 
+// GeolocationService handles communication with the geolocation related
+// methods of the APIC API.
+type GeolocationService service
+
+type ListResponse struct {
+	Imdata []struct {
+		GeoSite struct {
+			Attributes struct {
+				ChildAction string `json:"childAction"`
+				Descr string `json:"descr"`
+				Dn string `json:"dn"`
+				LcOwn string `json:"lcOwn"`
+				ModTs time.Time `json:"modTs"`
+				Name string `json:"name"`
+				NameAlias string `json:"nameAlias"`
+				OwnerKey string `json:"ownerKey"`
+				OwnerTag string `json:"ownerTag"`
+				Status string `json:"status"`
+				UID string `json:"uid"`
+			} `json:"attributes"`
+			Children []struct {
+				GeoBuilding struct {
+					Attributes struct {
+						ChildAction string `json:"childAction"`
+						Descr string `json:"descr"`
+						LcOwn string `json:"lcOwn"`
+						ModTs time.Time `json:"modTs"`
+						Name string `json:"name"`
+						NameAlias string `json:"nameAlias"`
+						Rn string `json:"rn"`
+						Status string `json:"status"`
+						UID string `json:"uid"`
+					} `json:"attributes"`
+					Children []struct {
+						GeoFloor struct {
+							Attributes struct {
+								ChildAction string `json:"childAction"`
+								Descr string `json:"descr"`
+								LcOwn string `json:"lcOwn"`
+								ModTs time.Time `json:"modTs"`
+								Name string `json:"name"`
+								NameAlias string `json:"nameAlias"`
+								Rn string `json:"rn"`
+								Status string `json:"status"`
+								UID string `json:"uid"`
+							} `json:"attributes"`
+							Children []struct {
+								GeoRoom struct {
+									Attributes struct {
+										ChildAction string `json:"childAction"`
+										Descr string `json:"descr"`
+										LcOwn string `json:"lcOwn"`
+										ModTs time.Time `json:"modTs"`
+										Name string `json:"name"`
+										NameAlias string `json:"nameAlias"`
+										Rn string `json:"rn"`
+										Status string `json:"status"`
+										UID string `json:"uid"`
+									} `json:"attributes"`
+									Children []struct {
+										GeoRack struct {
+											Attributes struct {
+												ChildAction string `json:"childAction"`
+												Descr string `json:"descr"`
+												LcOwn string `json:"lcOwn"`
+												ModTs time.Time `json:"modTs"`
+												Name string `json:"name"`
+												NameAlias string `json:"nameAlias"`
+												Rn string `json:"rn"`
+												Status string `json:"status"`
+												UID string `json:"uid"`
+											} `json:"attributes"`
+										} `json:"geoRack"`
+									} `json:"children"`
+								} `json:"geoRoom"`
+							} `json:"children"`
+						} `json:"geoFloor"`
+					} `json:"children"`
+				} `json:"geoBuilding"`
+			} `json:"children"`
+		} `json:"geoSite"`
+	} `json:"imdata"`
+}
 // api/node/mo/uni/fabric/site-%s.json // geo-site name
 // {
 //   "geoSite": {
