@@ -136,6 +136,7 @@ func (s *FabricMembershipService) New(name, nodeID, podID, serial string) (*Node
 
 // Add adds a single node to the ACI fabric membership
 func (s *FabricMembershipService) Add(ctx context.Context, n *Node) (NodesResponse, error) {
+
 	path := fmt.Sprintf("api/node/mo/uni/controller/nodeidentpol/nodep-%s.json", n.Serial)
 
 	var nr NodesResponse
@@ -155,6 +156,7 @@ func (s *FabricMembershipService) Add(ctx context.Context, n *Node) (NodesRespon
 
 // Delete deletes a fabric membership node
 func (s *FabricMembershipService) Delete(ctx context.Context, n *Node) (NodesResponse, error) {
+
 	path := "api/node/mo/uni/controller/nodeidentpol.json"
 
 	var nr NodesResponse
@@ -174,6 +176,7 @@ func (s *FabricMembershipService) Delete(ctx context.Context, n *Node) (NodesRes
 
 // List lists all node members of the ACI fabric
 func (s *FabricMembershipService) List(ctx context.Context) ([]*Node, error) {
+
 	path := "api/node/class/fabricNode.json"
 
 	var ns []*Node
@@ -220,6 +223,9 @@ type DecommissionAttributes struct {
 
 // Decommission decommisions a fabric membership node
 func (s *FabricMembershipService) Decommission(ctx context.Context, node *Node) (NodesResponse, error) {
+
+	path := "api/node/mo/uni/fabric/outofsvc.json"
+
 	tdn := fmt.Sprintf("topology/pod-%s/node-%s", node.PodID, node.ID)
 	payload := DecommissionNodeContainer{
 		DecommissionNode: DecommissionNode{
@@ -230,7 +236,6 @@ func (s *FabricMembershipService) Decommission(ctx context.Context, node *Node) 
 			},
 		},
 	}
-	path := "api/node/mo/uni/fabric/outofsvc.json"
 
 	var nr NodesResponse
 
