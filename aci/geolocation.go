@@ -212,6 +212,12 @@ type ListResponse struct {
 	} `json:"imdata"`
 }
 
+// GeolocationResponse ...
+type GeolocationResponse struct {
+	TotalCount string        `json:"totalCount"`
+	Imdata     []interface{} `json:"imdata"`
+}
+
 // api/node/mo/uni/fabric/site-%s.json // geo-site name
 // {
 //   "geoSite": {
@@ -619,43 +625,115 @@ type ListResponse struct {
 //     }
 //   ]
 // }
-//
-// // ADD RACK
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01/rack-Rack01.json"
-// {
-//   "geoRack": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01/rack-Rack01",
-//       "name": "Rack01",
-//       "rn": "rack-Rack01",
-//       "status": "created"
-//     },
-//     "children": []
-//   }
-// }
-//
-// // DELETE RACK
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01.json"
-// {
-//   "geoRow": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01",
-//       "status": "modified"
-//     },
-//     "children": [
-//       {
-//         "geoRack": {
-//           "attributes": {
-//             "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01/rack-Rack01",
-//             "status": "deleted"
-//           },
-//           "children": []
-//         }
-//       }
-//     ]
-//   }
-// }
-//
+
+func newGeoRowContainer(site, building, floor, room, row, rack, action string) *GeoRackContainer {
+	return &GeoRowContainer{
+		GeoRow{
+			GeoAttrs{
+				Dn: fmt.Sprintf(
+					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s",
+					site,
+					building,
+					floor,
+					room,
+					row,
+				),
+				Status: "modified",
+			},
+		},
+		Children: []GeoRackContainer{
+			GeoRack{
+				GeoAttrs{
+					Dn: fmt.Sprintf(
+						"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s",
+						site,
+						building,
+						floor,
+						room,
+						row,
+						rack,
+					),
+					Status: action,
+				},
+			},
+		},
+	}
+}
+
+func newGeoRackContainer(site, building, floor, room, row, rack, action string) *GeoRackContainer {
+	return &GeoRackContainer{
+		GeoRack{
+			GeoAttrs{
+				Dn: fmt.Sprintf(
+					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s",
+					site,
+					building,
+					floor,
+					room,
+					row,
+					rack,
+				),
+				Status: action,
+			},
+		},
+		Children: nil,
+	}
+}
+
+// AddRack ...
+func (s *GeolocationService) AddRack(ctx context.Context, site, building, floor, room, row, rack string) (GeolocationResponse, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s.json",
+		site,
+		building,
+		floor,
+		room,
+		row,
+		rack,
+	)
+
+	var rr GeolocationResponse
+
+	c := newGeoRackContainer(site, building, floor, room, row, rack, "created")
+	req, err := s.client.NewRequest(http.MethodPost, path, c)
+	if err != nil {
+		return rr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &rr)
+	if err != nil {
+		return rr, err
+	}
+
+	return rr, nil
+}
+
+// DeleteRack ...
+func (s *GeolocationService) DeleteRack(ctx context.Context, site, building, floor, room, row, rack string) (GeolocationResponse, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json",
+		site,
+		building,
+		floor,
+		room,
+		row,
+	)
+
+	var rr GeolocationResponse
+
+	c := newGeoRowContainer(site, building, floor, room, row, rack, delete)
+	req, err := s.client.NewRequest(http.MethodPost, path, c)
+	if err != nil {
+		return rr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &rr)
+	if err != nil {
+		return rr, err
+	}
+
+	return rr, nil
+}
 
 // ListRacksResponse ...
 type ListRacksResponse struct {
@@ -694,27 +772,3 @@ func (s *GeolocationService) ListRacks(ctx context.Context, site, building, floo
 	}
 	return rs, nil
 }
-
-// LIST RACKS
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01.json?query-target=children&target-subtree-class=geoRack"
-// response:
-// {
-//   "totalCount": "1",
-//   "imdata": [
-//     {
-//       "geoRack": {
-//         "attributes": {
-//           "childAction": "",
-//           "descr": "",
-//           "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01/rack-Rack01",
-//           "lcOwn": "local",
-//           "modTs": "2017-07-17T13:54:14.796+00:00",
-//           "monPolDn": "uni/fabric/monfab-default",
-//           "name": "Rack01",
-//           "status": "",
-//           "uid": "15374"
-//         }
-//       }
-//     }
-//   ]
-// }
