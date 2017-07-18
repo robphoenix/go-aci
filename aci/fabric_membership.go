@@ -174,7 +174,7 @@ func (s *FabricMembershipService) DeleteNode(ctx context.Context, n *Node) (Node
 	return nr, nil
 }
 
-// List lists all node members of the ACI fabric
+// ListNodes lists all node members of the ACI fabric
 func (s *FabricMembershipService) ListNodes(ctx context.Context) ([]*Node, error) {
 
 	path := "api/node/class/fabricNode.json"
@@ -192,13 +192,12 @@ func (s *FabricMembershipService) ListNodes(ctx context.Context) ([]*Node, error
 		return nil, fmt.Errorf("list nodes: %v", err)
 	}
 
-	for _, node := range nr.NodesImdata {
-		n := &Node{
-			Name:   node.Name,
-			ID:     node.ID,
-			Serial: node.Serial,
-		}
-		ns = append(ns, n)
+	for _, n := range nr.NodesImdata {
+		ns = append(ns, &Node{
+			Name:   n.Name,
+			ID:     n.ID,
+			Serial: n.Serial,
+		})
 	}
 	return ns, nil
 }
