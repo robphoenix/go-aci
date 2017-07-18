@@ -1,6 +1,11 @@
 package aci
 
-import "time"
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"time"
+)
 
 var (
 	addGeoSitePath      = "api/node/mo/uni/fabric/site-%s.json" // geo-site name
@@ -9,112 +14,118 @@ var (
 
 // Site ...
 type Site struct {
-	Name      string
-	Buildings []Building
+	Name        string
+	Description string
+	Buildings   []Building
 }
 
 // Building ...
 type Building struct {
-	Name   string
-	Floors []Floor
+	Name        string
+	Description string
+	Floors      []Floor
 }
 
 // Floor ...
 type Floor struct {
-	Name  string
-	Rooms []Room
+	Name        string
+	Description string
+	Rooms       []Room
 }
 
 // Room ...
 type Room struct {
-	Name string
-	Rows []Row
+	Name        string
+	Description string
+	Rows        []Row
 }
 
 // Row ...
 type Row struct {
-	Name  string
-	Racks []Rack
+	Name        string
+	Description string
+	Racks       []Rack
 }
 
 // Rack ...
 type Rack struct {
-	Name string
+	Name        string
+	Description string
 }
 
 // GeoSiteContainer ...
 type GeoSiteContainer struct {
-	GeoSite `json:"geoSite"`
+	GeoSite `json:"geoSite,omitempty"`
 }
 
 // GeoSite ...
 type GeoSite struct {
-	GeoAttrs `json:"attributes"`
-	Children []GeoBuildingContainer `json:"children"`
+	GeoAttrs `json:"attributes,omitempty"`
+	Children []GeoBuildingContainer `json:"children,omitempty"`
 }
 
 // GeoBuildingContainer ...
 type GeoBuildingContainer struct {
-	GeoBuilding `json:"geoBuilding"`
+	GeoBuilding `json:"geoBuilding,omitempty"`
 }
 
 // GeoBuilding ...
 type GeoBuilding struct {
-	GeoAttrs `json:"attributes"`
-	Children []GeoFloorContainer `json:"children"`
+	GeoAttrs `json:"attributes,omitempty"`
+	Children []GeoFloorContainer `json:"children,omitempty"`
 }
 
 // GeoFloorContainer ...
 type GeoFloorContainer struct {
-	GeoFloor `json:"geoFloor"`
+	GeoFloor `json:"geoFloor,omitempty"`
 }
 
 // GeoFloor ...
 type GeoFloor struct {
-	GeoAttrs `json:"attributes"`
-	Children []GeoRoomContainer `json:"children"`
+	GeoAttrs `json:"attributes,omitempty"`
+	Children []GeoRoomContainer `json:"children,omitempty"`
 }
 
 // GeoRoomContainer ...
 type GeoRoomContainer struct {
-	GeoRoom `json:"geoRoom"`
+	GeoRoom `json:"geoRoom,omitempty"`
 }
 
 // GeoRoom ...
 type GeoRoom struct {
-	GeoAttrs `json:"attributes"`
-	Children []GeoRowContainer `json:"children"`
+	GeoAttrs `json:"attributes,omitempty"`
+	Children []GeoRowContainer `json:"children,omitempty"`
 }
 
 // GeoRowContainer ...
 type GeoRowContainer struct {
-	GeoRow `json:"geoRow"`
+	GeoRow `json:"geoRow,omitempty"`
 }
 
 // GeoRow ...
 type GeoRow struct {
-	GeoAttrs `json:"attributes"`
-	Children []GeoRackContainer `json:"children"`
+	GeoAttrs `json:"attributes,omitempty"`
+	Children []GeoRackContainer `json:"children,omitempty"`
 }
 
 // GeoRackContainer ...
 type GeoRackContainer struct {
-	GeoRack `json:"geoRack"`
+	GeoRack `json:"geoRack,omitempty"`
 }
 
 // GeoRack ...
 type GeoRack struct {
-	GeoAttrs `json:"attributes"`
-	// TODO: specify node struct ??
-	Children []interface{} `json:"children"`
+	GeoAttrs `json:"attributes,omitempty"`
+	Children []interface{} `json:"children,omitempty"`
 }
 
 // GeoAttrs ...
 type GeoAttrs struct {
-	Dn     string `json:"dn"`
-	Name   string `json:"name"`
-	Rn     string `json:"rn"`
-	Status string `json:"status"`
+	Descr  string `json:"descr,omitempty"`
+	Dn     string `json:"dn,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Rn     string `json:"rn,omitempty"`
+	Status string `json:"status,omitempty"`
 }
 
 // GeolocationService handles communication with the geolocation related
@@ -645,6 +656,45 @@ type ListResponse struct {
 //   }
 // }
 //
+
+// ListRacksResponse ...
+type ListRacksResponse struct {
+	Imdata []GeoRack `json:"imdata"`
+}
+
+// ListRacks ...
+func (s *GeolocationService) ListRacks(ctx context.Context, site, building, floor, room, row string) ([]*Rack, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json?query-target=children&target-subtree-class=geoRack",
+		site,
+		building,
+		floor,
+		room,
+		row,
+	)
+
+	var rs []*Rack
+	var rr ListRacksResponse
+
+	req, err := s.client.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("list racks: %v", err)
+	}
+
+	_, err = s.client.Do(ctx, req, &rr)
+	if err != nil {
+		return nil, fmt.Errorf("list racks: %v", err)
+	}
+
+	for _, r := range rr.Imdata {
+		rs = append(rs, &Rack{
+			Name:        r.Name,
+			Description: r.Description,
+		})
+	}
+	return rs, nil
+}
+
 // LIST RACKS
 // "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01.json?query-target=children&target-subtree-class=geoRack"
 // response:
