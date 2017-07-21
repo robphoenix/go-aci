@@ -626,10 +626,10 @@ type GeolocationResponse struct {
 //   ]
 // }
 
-func newGeoRowContainer(site, building, floor, room, row, rack, action string) *GeoRackContainer {
-	return &GeoRowContainer{
-		GeoRow{
-			GeoAttrs{
+func newGeoRowContainer(site, building, floor, room, row, rack, action string) GeoRowContainer {
+	return GeoRowContainer{
+		GeoRow: GeoRow{
+			GeoAttrs: GeoAttrs{
 				Dn: fmt.Sprintf(
 					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s",
 					site,
@@ -640,30 +640,17 @@ func newGeoRowContainer(site, building, floor, room, row, rack, action string) *
 				),
 				Status: "modified",
 			},
-		},
-		Children: []GeoRackContainer{
-			GeoRack{
-				GeoAttrs{
-					Dn: fmt.Sprintf(
-						"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s",
-						site,
-						building,
-						floor,
-						room,
-						row,
-						rack,
-					),
-					Status: action,
-				},
+			Children: []GeoRackContainer{
+				newGeoRackContainer(site, building, floor, room, row, rack, action),
 			},
 		},
 	}
 }
 
-func newGeoRackContainer(site, building, floor, room, row, rack, action string) *GeoRackContainer {
-	return &GeoRackContainer{
-		GeoRack{
-			GeoAttrs{
+func newGeoRackContainer(site, building, floor, room, row, rack, action string) GeoRackContainer {
+	return GeoRackContainer{
+		GeoRack: GeoRack{
+			GeoAttrs: GeoAttrs{
 				Dn: fmt.Sprintf(
 					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s",
 					site,
@@ -675,8 +662,8 @@ func newGeoRackContainer(site, building, floor, room, row, rack, action string) 
 				),
 				Status: action,
 			},
+			Children: nil,
 		},
-		Children: nil,
 	}
 }
 
@@ -765,10 +752,7 @@ func (s *GeolocationService) ListRacks(ctx context.Context, site, building, floo
 	}
 
 	for _, r := range rr.Imdata {
-		rs = append(rs, &Rack{
-			Name:        r.Name,
-			Description: r.Description,
-		})
+		rs = append(rs, &Rack{Name: r.Name})
 	}
 	return rs, nil
 }
