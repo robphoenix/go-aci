@@ -706,51 +706,39 @@ func (s *GeolocationService) DeleteRow(ctx context.Context, site, building, floo
 	return gr, nil
 }
 
-// // DELETE ROW
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01.json"
-// {
-//   "geoRoom": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01",
-//       "status": "modified"
-//     },
-//     "children": [
-//       {
-//         "geoRow": {
-//           "attributes": {
-//             "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01",
-//             "status": "deleted"
-//           },
-//           "children": []
-//         }
-//       }
-//     ]
-//   }
-// }
-//
-// LIST ROWS
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01.json?query-target=children&target-subtree-class=geoRow"
-// response:
-// {
-//   "totalCount": "1",
-//   "imdata": [
-//     {
-//       "geoRow": {
-//         "attributes": {
-//           "childAction": "",
-//           "descr": "",
-//           "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01",
-//           "lcOwn": "local",
-//           "modTs": "2017-07-17T13:54:14.796+00:00",
-//           "monPolDn": "uni/fabric/monfab-default",
-//           "name": "Row01",
-//           "status": "",
-//           "uid": "15374"
-//         }
-//       }
-//     }
-//   ]
-// }
+// ListRows ...
+func (s *GeolocationService) ListRows(ctx context.Context, site, building, floor, room string) ([]*Row, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json?query-target=children&target-subtree-class=geoRow",
+		site,
+		building,
+		floor,
+		room,
+	)
+
+	req, err := s.client.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("list rows: %v", err)
+	}
+
+	// structure of expected response
+	var gr struct {
+		Imdata []GeoRow `json:"imdata"`
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return nil, fmt.Errorf("list rows: %v", err)
+	}
+
+	var rs []*Row
+
+	for _, r := range gr.Imdata {
+		rs = append(rs, &Row{Name: r.Name})
+	}
+
+	return rs, nil
+}
 
 // AddRack ...
 func (s *GeolocationService) AddRack(ctx context.Context, site, building, floor, room, row, rack string) (GeolocationResponse, error) {
@@ -825,6 +813,7 @@ func (s *GeolocationService) ListRacks(ctx context.Context, site, building, floo
 		return nil, fmt.Errorf("list racks: %v", err)
 	}
 
+	// structure of expected response
 	var gr struct {
 		Imdata []GeoRack `json:"imdata"`
 	}
