@@ -108,6 +108,27 @@ type GeoRow struct {
 	Children []GeoRackContainer `json:"children,omitempty"`
 }
 
+func newGeoRowContainer(site, building, floor, room, row, rack, action string) GeoRowContainer {
+	return GeoRowContainer{
+		GeoRow: GeoRow{
+			GeoAttrs: GeoAttrs{
+				Dn: fmt.Sprintf(
+					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s",
+					site,
+					building,
+					floor,
+					room,
+					row,
+				),
+				Status: "modified",
+			},
+			Children: []GeoRackContainer{
+				newGeoRackContainer(site, building, floor, room, row, rack, action),
+			},
+		},
+	}
+}
+
 // GeoRackContainer ...
 type GeoRackContainer struct {
 	GeoRack `json:"geoRack,omitempty"`
@@ -117,6 +138,26 @@ type GeoRackContainer struct {
 type GeoRack struct {
 	GeoAttrs `json:"attributes,omitempty"`
 	Children []interface{} `json:"children,omitempty"`
+}
+
+func newGeoRackContainer(site, building, floor, room, row, rack, action string) GeoRackContainer {
+	return GeoRackContainer{
+		GeoRack: GeoRack{
+			GeoAttrs: GeoAttrs{
+				Dn: fmt.Sprintf(
+					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s",
+					site,
+					building,
+					floor,
+					room,
+					row,
+					rack,
+				),
+				Status: action,
+			},
+			Children: nil,
+		},
+	}
 }
 
 // GeoAttrs ...
@@ -132,6 +173,7 @@ type GeoAttrs struct {
 // methods of the APIC API.
 type GeolocationService service
 
+// ListResponse ...
 type ListResponse struct {
 	Imdata []struct {
 		GeoSite struct {
@@ -626,47 +668,6 @@ type GeolocationResponse struct {
 //   ]
 // }
 
-func newGeoRowContainer(site, building, floor, room, row, rack, action string) GeoRowContainer {
-	return GeoRowContainer{
-		GeoRow: GeoRow{
-			GeoAttrs: GeoAttrs{
-				Dn: fmt.Sprintf(
-					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s",
-					site,
-					building,
-					floor,
-					room,
-					row,
-				),
-				Status: "modified",
-			},
-			Children: []GeoRackContainer{
-				newGeoRackContainer(site, building, floor, room, row, rack, action),
-			},
-		},
-	}
-}
-
-func newGeoRackContainer(site, building, floor, room, row, rack, action string) GeoRackContainer {
-	return GeoRackContainer{
-		GeoRack: GeoRack{
-			GeoAttrs: GeoAttrs{
-				Dn: fmt.Sprintf(
-					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s",
-					site,
-					building,
-					floor,
-					room,
-					row,
-					rack,
-				),
-				Status: action,
-			},
-			Children: nil,
-		},
-	}
-}
-
 // AddRack ...
 func (s *GeolocationService) AddRack(ctx context.Context, site, building, floor, room, row, rack string) (GeolocationResponse, error) {
 	path := fmt.Sprintf(
@@ -679,20 +680,19 @@ func (s *GeolocationService) AddRack(ctx context.Context, site, building, floor,
 		rack,
 	)
 
-	var rr GeolocationResponse
+	var gr GeolocationResponse
 
-	c := newGeoRackContainer(site, building, floor, room, row, rack, "created")
-	req, err := s.client.NewRequest(http.MethodPost, path, c)
+	req, err := s.client.NewRequest(http.MethodPost, path, newGeoRackContainer(site, building, floor, room, row, rack, "created"))
 	if err != nil {
-		return rr, err
+		return gr, err
 	}
 
-	_, err = s.client.Do(ctx, req, &rr)
+	_, err = s.client.Do(ctx, req, &gr)
 	if err != nil {
-		return rr, err
+		return gr, err
 	}
 
-	return rr, nil
+	return gr, nil
 }
 
 // DeleteRack ...
@@ -706,25 +706,19 @@ func (s *GeolocationService) DeleteRack(ctx context.Context, site, building, flo
 		row,
 	)
 
-	var rr GeolocationResponse
+	var gr GeolocationResponse
 
-	c := newGeoRowContainer(site, building, floor, room, row, rack, delete)
-	req, err := s.client.NewRequest(http.MethodPost, path, c)
+	req, err := s.client.NewRequest(http.MethodPost, path, newGeoRowContainer(site, building, floor, room, row, rack, delete))
 	if err != nil {
-		return rr, err
+		return gr, err
 	}
 
-	_, err = s.client.Do(ctx, req, &rr)
+	_, err = s.client.Do(ctx, req, &gr)
 	if err != nil {
-		return rr, err
+		return gr, err
 	}
 
-	return rr, nil
-}
-
-// ListRacksResponse ...
-type ListRacksResponse struct {
-	Imdata []GeoRack `json:"imdata"`
+	return gr, nil
 }
 
 // ListRacks ...
@@ -738,21 +732,25 @@ func (s *GeolocationService) ListRacks(ctx context.Context, site, building, floo
 		row,
 	)
 
-	var rs []*Rack
-	var rr ListRacksResponse
-
 	req, err := s.client.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list racks: %v", err)
 	}
 
-	_, err = s.client.Do(ctx, req, &rr)
+	var gr struct {
+		Imdata []GeoRack `json:"imdata"`
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
 	if err != nil {
 		return nil, fmt.Errorf("list racks: %v", err)
 	}
 
-	for _, r := range rr.Imdata {
+	var rs []*Rack
+
+	for _, r := range gr.Imdata {
 		rs = append(rs, &Rack{Name: r.Name})
 	}
+
 	return rs, nil
 }
