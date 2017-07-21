@@ -107,7 +107,7 @@ func newGeoRoomContainer(site, building, floor, room, row, action string) GeoRoo
 	// then the room just needs to be modified.
 	if row != "" {
 		c = append(c, newGeoRowContainer(site, building, floor, room, row, "", action))
-		action = "modified"
+		action = modify
 	}
 	return GeoRoomContainer{
 		GeoRoom: GeoRoom{
@@ -147,7 +147,7 @@ func newGeoRowContainer(site, building, floor, room, row, rack, action string) G
 	// then the row just needs to be modified.
 	if rack != "" {
 		c = append(c, newGeoRackContainer(site, building, floor, room, row, rack, action))
-		action = "modified"
+		action = modify
 	}
 	return GeoRowContainer{
 		GeoRow: GeoRow{
@@ -664,7 +664,34 @@ func (s *GeolocationService) AddRow(ctx context.Context, site, building, floor, 
 
 	var gr GeolocationResponse
 
-	content := newGeoRowContainer(site, building, floor, room, row, "", "created")
+	content := newGeoRowContainer(site, building, floor, room, row, "", create)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// DeleteRow ...
+func (s *GeolocationService) DeleteRow(ctx context.Context, site, building, floor, room, row string) (GeolocationResponse, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json",
+		site,
+		building,
+		floor,
+		room,
+	)
+
+	var gr GeolocationResponse
+
+	content := newGeoRoomContainer(site, building, floor, room, row, delete)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, content)
 	if err != nil {
