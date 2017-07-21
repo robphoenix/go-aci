@@ -97,6 +97,35 @@ type GeoRoom struct {
 	Children []GeoRowContainer `json:"children,omitempty"`
 }
 
+func newGeoRoomContainer(site, building, floor, room, row, action string) GeoRoomContainer {
+	c := []GeoRowContainer{}
+	// The row variable will be an empty string if
+	// it is the room that is being added/deleted.
+	// In this case we don't need to add any
+	// GeoRowContainer's to c.
+	// If it is the row that is being added/deleted
+	// then the room just needs to be modified.
+	if row != "" {
+		c = append(c, newGeoRowContainer(site, building, floor, room, row, "", action))
+		action = "modified"
+	}
+	return GeoRoomContainer{
+		GeoRoom: GeoRoom{
+			GeoAttrs: GeoAttrs{
+				Dn: fmt.Sprintf(
+					"uni/fabric/site-%s/building-%s/floor-%s/room-%s",
+					site,
+					building,
+					floor,
+					room,
+				),
+				Status: action,
+			},
+			Children: c,
+		},
+	}
+}
+
 // GeoRowContainer ...
 type GeoRowContainer struct {
 	GeoRow `json:"geoRow,omitempty"`
@@ -109,6 +138,17 @@ type GeoRow struct {
 }
 
 func newGeoRowContainer(site, building, floor, room, row, rack, action string) GeoRowContainer {
+	c := []GeoRackContainer{}
+	// The rack variable will be an empty string if
+	// it is the row that is being added/deleted.
+	// In this case we don't need to add any
+	// GeoRackContainer's to c.
+	// If it is the Rack that is being added/deleted
+	// then the row just needs to be modified.
+	if rack != "" {
+		c = append(c, newGeoRackContainer(site, building, floor, room, row, rack, action))
+		action = "modified"
+	}
 	return GeoRowContainer{
 		GeoRow: GeoRow{
 			GeoAttrs: GeoAttrs{
@@ -120,11 +160,11 @@ func newGeoRowContainer(site, building, floor, room, row, rack, action string) G
 					room,
 					row,
 				),
-				Status: "modified",
+				Name:   row,
+				Rn:     fmt.Sprintf("row-%s", row),
+				Status: action,
 			},
-			Children: []GeoRackContainer{
-				newGeoRackContainer(site, building, floor, room, row, rack, action),
-			},
+			Children: c,
 		},
 	}
 }
@@ -153,6 +193,8 @@ func newGeoRackContainer(site, building, floor, room, row, rack, action string) 
 					row,
 					rack,
 				),
+				Name:   rack,
+				Rn:     fmt.Sprintf("rack-%s", rack),
 				Status: action,
 			},
 			Children: nil,
@@ -608,20 +650,35 @@ type GeolocationResponse struct {
 //   ]
 // }
 //
-// // ADD ROW
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01.json"
-// {
-//   "geoRow": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01/row-Row01",
-//       "name": "Row01",
-//       "rn": "row-Row01",
-//       "status": "created"
-//     },
-//     "children": []
-//   }
-// }
-//
+
+// AddRow ...
+func (s *GeolocationService) AddRow(ctx context.Context, site, building, floor, room, row string) (GeolocationResponse, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json",
+		site,
+		building,
+		floor,
+		room,
+		row,
+	)
+
+	var gr GeolocationResponse
+
+	content := newGeoRowContainer(site, building, floor, room, row, "", "created")
+
+	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
 // // DELETE ROW
 // "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01.json"
 // {
@@ -682,7 +739,9 @@ func (s *GeolocationService) AddRack(ctx context.Context, site, building, floor,
 
 	var gr GeolocationResponse
 
-	req, err := s.client.NewRequest(http.MethodPost, path, newGeoRackContainer(site, building, floor, room, row, rack, "created"))
+	content := newGeoRackContainer(site, building, floor, room, row, rack, "created")
+
+	req, err := s.client.NewRequest(http.MethodPost, path, content)
 	if err != nil {
 		return gr, err
 	}
@@ -708,7 +767,9 @@ func (s *GeolocationService) DeleteRack(ctx context.Context, site, building, flo
 
 	var gr GeolocationResponse
 
-	req, err := s.client.NewRequest(http.MethodPost, path, newGeoRowContainer(site, building, floor, room, row, rack, delete))
+	content := newGeoRowContainer(site, building, floor, room, row, rack, delete)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, content)
 	if err != nil {
 		return gr, err
 	}
