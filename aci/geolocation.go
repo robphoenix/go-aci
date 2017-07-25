@@ -86,6 +86,34 @@ type GeoFloor struct {
 	Children []GeoRoomContainer `json:"children,omitempty"`
 }
 
+func newGeoFloorContainer(site, building, floor, room, action string) GeoFloorContainer {
+	c := []GeoRoomContainer{}
+	// The room variable will be an empty string if
+	// it is the floor that is being added/deleted.
+	// In this case we don't need to add any
+	// GeoRowContainer's to c.
+	// If it is the room that is being added/deleted
+	// then the floor just needs to be modified.
+	if room != "" {
+		c = append(c, newGeoRoomContainer(site, building, floor, room, "", action))
+		action = modify
+	}
+	return GeoFloorContainer{
+		GeoFloor: GeoFloor{
+			GeoAttrs: GeoAttrs{
+				Dn: fmt.Sprintf(
+					"uni/fabric/site-%s/building-%s/floor-%s",
+					site,
+					building,
+					floor,
+				),
+				Status: action,
+			},
+			Children: c,
+		},
+	}
+}
+
 // GeoRoomContainer ...
 type GeoRoomContainer struct {
 	GeoRoom `json:"geoRoom,omitempty"`
@@ -590,66 +618,91 @@ type GeolocationResponse struct {
 //   ]
 // }
 //
-// // ADD ROOM
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01.json"
-// {
-//   "geoRoom": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01",
-//       "name": "Room01",
-//       "rn": "room-Room01",
-//       "status": "created"
-//     },
-//     "children": []
-//   }
-// }
-//
-// // DELETE ROOM
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01.json"
-// {
-//   "geoFloor": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01",
-//       "status": "modified"
-//     },
-//     "children": [
-//       {
-//         "geoRoom": {
-//           "attributes": {
-//             "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01",
-//             "status": "deleted"
-//           },
-//           "children": []
-//         }
-//       }
-//     ]
-//   }
-// }
-//
-// LIST ROOMS
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01.json?query-target=children&target-subtree-class=geoRoom"
-// response:
-// {
-//   "totalCount": "1",
-//   "imdata": [
-//     {
-//       "geoRoom": {
-//         "attributes": {
-//           "childAction": "",
-//           "descr": "",
-//           "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01/room-Room01",
-//           "lcOwn": "local",
-//           "modTs": "2017-07-17T13:54:14.796+00:00",
-//           "monPolDn": "uni/fabric/monfab-default",
-//           "name": "Room01",
-//           "status": "",
-//           "uid": "15374"
-//         }
-//       }
-//     }
-//   ]
-// }
-//
+// AddRoom ...
+func (s *GeolocationService) AddRoom(ctx context.Context, site, building, floor, room string) (GeolocationResponse, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json",
+		site,
+		building,
+		floor,
+		room,
+	)
+
+	var gr GeolocationResponse
+
+	content := newGeoRoomContainer(site, building, floor, room, "", create)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// DeleteRoom ...
+func (s *GeolocationService) DeleteRoom(ctx context.Context, site, building, floor, room string) (GeolocationResponse, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json",
+		site,
+		building,
+		floor,
+	)
+
+	var gr GeolocationResponse
+
+	content := newGeoFloorContainer(site, building, floor, room, delete)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// ListRooms ...
+func (s *GeolocationService) ListRooms(ctx context.Context, site, building, floor string) ([]*Room, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json?query-target=children&target-subtree-class=geoRow",
+		site,
+		building,
+		floor,
+	)
+
+	req, err := s.client.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("list rooms: %v", err)
+	}
+
+	// structure of expected response
+	var gr struct {
+		Imdata []GeoRoom `json:"imdata"`
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return nil, fmt.Errorf("list rooms: %v", err)
+	}
+
+	var rs []*Room
+
+	for _, r := range gr.Imdata {
+		rs = append(rs, &Room{Name: r.Name})
+	}
+
+	return rs, nil
+}
 
 // AddRow ...
 func (s *GeolocationService) AddRow(ctx context.Context, site, building, floor, room, row string) (GeolocationResponse, error) {
