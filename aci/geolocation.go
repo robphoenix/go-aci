@@ -64,6 +64,29 @@ type GeoSite struct {
 	Children []GeoBuildingContainer `json:"children,omitempty"`
 }
 
+func newGeoSiteContainer(site, building, action string) GeoSiteContainer {
+	c := []GeoBuildingContainer{}
+	// The building variable will be an empty string if
+	// it is the building that is being added/deleted.
+	// In this case we don't need to add any
+	// GeoBuildingContainer's to c.
+	// If it is the building that is being added/deleted
+	// then the site just needs to be modified.
+	if building != "" {
+		c = append(c, newGeoBuildingContainer(site, building, "", action))
+		action = modify
+	}
+	return GeoSiteContainer{
+		GeoSite: GeoSite{
+			GeoAttrs: GeoAttrs{
+				Dn:     fmt.Sprintf("uni/fabric/site-%s", site),
+				Status: action,
+			},
+			Children: c,
+		},
+	}
+}
+
 // GeoBuildingContainer ...
 type GeoBuildingContainer struct {
 	GeoBuilding `json:"geoBuilding,omitempty"`
@@ -73,6 +96,29 @@ type GeoBuildingContainer struct {
 type GeoBuilding struct {
 	GeoAttrs `json:"attributes,omitempty"`
 	Children []GeoFloorContainer `json:"children,omitempty"`
+}
+
+func newGeoBuildingContainer(site, building, floor, action string) GeoBuildingContainer {
+	c := []GeoFloorContainer{}
+	// The floor variable will be an empty string if
+	// it is the building that is being added/deleted.
+	// In this case we don't need to add any
+	// GeoFloorContainer's to c.
+	// If it is the floor that is being added/deleted
+	// then the building just needs to be modified.
+	if floor != "" {
+		c = append(c, newGeoFloorContainer(site, building, floor, "", action))
+		action = modify
+	}
+	return GeoBuildingContainer{
+		GeoBuilding: GeoBuilding{
+			GeoAttrs: GeoAttrs{
+				Dn:     fmt.Sprintf("uni/fabric/site-%s/building-%s", site, building),
+				Status: action,
+			},
+			Children: c,
+		},
+	}
 }
 
 // GeoFloorContainer ...
