@@ -604,66 +604,89 @@ type GeolocationResponse struct {
 //   ]
 // }
 //
-// // ADD FLOOR
-// "api/node/mo/uni/fabric/site-Site01/building-Building01/floor-Floor01.json"
-// {
-//   "geoFloor": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01",
-//       "name": "Floor01",
-//       "rn": "floor-Floor01",
-//       "status": "created"
-//     },
-//     "children": []
-//   }
-// }
-//
-// // DELETE FLOOR
-// "api/node/mo/uni/fabric/site-Site01/building-Building01.json"
-// {
-//   "geoBuilding": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building01",
-//       "status": "modified"
-//     },
-//     "children": [
-//       {
-//         "geoFloor": {
-//           "attributes": {
-//             "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01",
-//             "status": "deleted"
-//           },
-//           "children": []
-//         }
-//       }
-//     ]
-//   }
-// }
-//
-// // LIST FLOORS
-// "api/node/mo/uni/fabric/site-Site01/building-Building01.json?query-target=children&target-subtree-class=geoFloor"
-// response:
-// {
-//   "totalCount": "1",
-//   "imdata": [
-//     {
-//       "geoFloor": {
-//         "attributes": {
-//           "childAction": "",
-//           "descr": "",
-//           "dn": "uni/fabric/site-Site01/building-Building01/floor-Floor01",
-//           "lcOwn": "local",
-//           "modTs": "2017-07-17T13:54:14.796+00:00",
-//           "monPolDn": "uni/fabric/monfab-default",
-//           "name": "Floor01",
-//           "status": "",
-//           "uid": "15374"
-//         }
-//       }
-//     }
-//   ]
-// }
-//
+// AddFloor ...
+func (s *GeolocationService) AddFloor(ctx context.Context, site, building, floor string) (GeolocationResponse, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json",
+		site,
+		building,
+		floor,
+	)
+
+	var gr GeolocationResponse
+
+	payload := newGeoFloorContainer(site, building, floor, "", create)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// DeleteFloor ...
+func (s *GeolocationService) DeleteFloor(ctx context.Context, site, building, floor string) (GeolocationResponse, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s.json",
+		site,
+		building,
+	)
+
+	var gr GeolocationResponse
+
+	payload := newGeoBuildingContainer(site, building, floor, delete)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// ListFloors ...
+func (s *GeolocationService) ListFloors(ctx context.Context, site, building string) ([]*Floor, error) {
+	path := fmt.Sprintf(
+		"api/node/mo/uni/fabric/site-%s/building-%s.json?query-target=children&target-subtree-class=geoRow",
+		site,
+		building,
+	)
+
+	req, err := s.client.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("list floors: %v", err)
+	}
+
+	// structure of expected response
+	var gr struct {
+		Imdata []GeoFloor `json:"imdata"`
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return nil, fmt.Errorf("list floors: %v", err)
+	}
+
+	var fs []*Floor
+
+	for _, r := range gr.Imdata {
+		fs = append(fs, &Floor{Name: r.Name})
+	}
+
+	return fs, nil
+}
+
 // AddRoom ...
 func (s *GeolocationService) AddRoom(ctx context.Context, site, building, floor, room string) (GeolocationResponse, error) {
 	path := fmt.Sprintf(
@@ -676,9 +699,9 @@ func (s *GeolocationService) AddRoom(ctx context.Context, site, building, floor,
 
 	var gr GeolocationResponse
 
-	content := newGeoRoomContainer(site, building, floor, room, "", create)
+	payload := newGeoRoomContainer(site, building, floor, room, "", create)
 
-	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return gr, err
 	}
@@ -702,9 +725,9 @@ func (s *GeolocationService) DeleteRoom(ctx context.Context, site, building, flo
 
 	var gr GeolocationResponse
 
-	content := newGeoFloorContainer(site, building, floor, room, delete)
+	payload := newGeoFloorContainer(site, building, floor, room, delete)
 
-	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return gr, err
 	}
@@ -763,9 +786,9 @@ func (s *GeolocationService) AddRow(ctx context.Context, site, building, floor, 
 
 	var gr GeolocationResponse
 
-	content := newGeoRowContainer(site, building, floor, room, row, "", create)
+	payload := newGeoRowContainer(site, building, floor, room, row, "", create)
 
-	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return gr, err
 	}
@@ -790,9 +813,9 @@ func (s *GeolocationService) DeleteRow(ctx context.Context, site, building, floo
 
 	var gr GeolocationResponse
 
-	content := newGeoRoomContainer(site, building, floor, room, row, delete)
+	payload := newGeoRoomContainer(site, building, floor, room, row, delete)
 
-	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return gr, err
 	}
@@ -853,9 +876,9 @@ func (s *GeolocationService) AddRack(ctx context.Context, site, building, floor,
 
 	var gr GeolocationResponse
 
-	content := newGeoRackContainer(site, building, floor, room, row, rack, "created")
+	payload := newGeoRackContainer(site, building, floor, room, row, rack, "created")
 
-	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return gr, err
 	}
@@ -881,9 +904,9 @@ func (s *GeolocationService) DeleteRack(ctx context.Context, site, building, flo
 
 	var gr GeolocationResponse
 
-	content := newGeoRowContainer(site, building, floor, room, row, rack, delete)
+	payload := newGeoRowContainer(site, building, floor, room, row, rack, delete)
 
-	req, err := s.client.NewRequest(http.MethodPost, path, content)
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return gr, err
 	}
