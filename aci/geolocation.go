@@ -529,81 +529,77 @@ type GeolocationResponse struct {
 //   ]
 // }
 //
-// // ADD BUILDING
-// "api/node/mo/uni/fabric/site-Site01/building-Building02.json"
-// {
-//   "geoBuilding": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01/building-Building02",
-//       "name": "Building02",
-//       "rn": "building-Building02",
-//       "status": "created"
-//     },
-//     "children": []
-//   }
-// }
-//
-// // DELETE BUILDING
-// "api/node/mo/uni/fabric/site-Site01.json"
-// {
-//   "geoSite": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-Site01",
-//       "status": "modified"
-//     },
-//     "children": [
-//       {
-//         "geoBuilding": {
-//           "attributes": {
-//             "dn": "uni/fabric/site-Site01/building-Building01",
-//             "status": "deleted"
-//           },
-//           "children": []
-//         }
-//       }
-//     ]
-//   }
-// }
-//
-// // LIST BUILDINGS
-// "api/node/mo/uni/fabric/site-Site01.json?query-target=children&target-subtree-class=geoBuilding"
-// response:
-// {
-//   "totalCount": "2",
-//   "imdata": [
-//     {
-//       "geoBuilding": {
-//         "attributes": {
-//           "childAction": "",
-//           "descr": "",
-//           "dn": "uni/fabric/site-Site01/building-default",
-//           "lcOwn": "local",
-//           "modTs": "2017-07-17T13:54:14.796+00:00",
-//           "monPolDn": "uni/fabric/monfab-default",
-//           "name": "default",
-//           "status": "",
-//           "uid": "0"
-//         }
-//       }
-//     },
-//     {
-//       "geoBuilding": {
-//         "attributes": {
-//           "childAction": "",
-//           "descr": "",
-//           "dn": "uni/fabric/site-Site01/building-Building01",
-//           "lcOwn": "local",
-//           "modTs": "2017-07-17T13:54:14.796+00:00",
-//           "monPolDn": "uni/fabric/monfab-default",
-//           "name": "Building01",
-//           "status": "",
-//           "uid": "15374"
-//         }
-//       }
-//     }
-//   ]
-// }
-//
+
+// AddBuilding ...
+func (s *GeolocationService) AddBuilding(ctx context.Context, site, building string) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s.json", site, building)
+
+	var gr GeolocationResponse
+
+	payload := newGeoBuildingContainer(site, building, "", create)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// DeleteBuilding ...
+func (s *GeolocationService) DeleteBuilding(ctx context.Context, site, building string) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", site)
+
+	var gr GeolocationResponse
+
+	payload := newGeoSiteContainer(site, building, delete)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// ListBuildings ...
+func (s *GeolocationService) ListBuildings(ctx context.Context, site string) ([]*Building, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json?query-target=children&target-subtree-class=geoRow", site)
+
+	req, err := s.client.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("list floors: %v", err)
+	}
+
+	// structure of expected response
+	var gr struct {
+		Imdata []GeoBuilding `json:"imdata"`
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return nil, fmt.Errorf("list floors: %v", err)
+	}
+
+	var bs []*Building
+
+	for _, b := range gr.Imdata {
+		bs = append(bs, &Building{Name: b.Name})
+	}
+
+	return bs, nil
+}
+
 // AddFloor ...
 func (s *GeolocationService) AddFloor(ctx context.Context, site, building, floor string) (GeolocationResponse, error) {
 	path := fmt.Sprintf(
@@ -680,8 +676,8 @@ func (s *GeolocationService) ListFloors(ctx context.Context, site, building stri
 
 	var fs []*Floor
 
-	for _, r := range gr.Imdata {
-		fs = append(fs, &Floor{Name: r.Name})
+	for _, f := range gr.Imdata {
+		fs = append(fs, &Floor{Name: f.Name})
 	}
 
 	return fs, nil
