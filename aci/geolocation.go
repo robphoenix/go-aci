@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 var (
@@ -51,6 +50,30 @@ type Row struct {
 type Rack struct {
 	Name        string
 	Description string
+}
+
+// FabricInstanceContainer ...
+type FabricInstanceContainer struct {
+	FabricInstance `json:"fabricInst"`
+}
+
+// FabricInstance ...
+type FabricInstance struct {
+	GeoAttrs `json:"attributes"`
+	Children []GeoSiteContainer `json:"children"`
+}
+
+func newFabricInstanceContainer(site, action string) FabricInstanceContainer {
+	c := []GeoSiteContainer{newGeoSiteContainer(site, "", action)}
+	return FabricInstanceContainer{
+		FabricInstance: FabricInstance{
+			GeoAttrs: GeoAttrs{
+				Dn:     "uni/fabric",
+				Status: modify,
+			},
+			Children: c,
+		},
+	}
 }
 
 // GeoSiteContainer ...
@@ -289,246 +312,81 @@ type GeoAttrs struct {
 // methods of the APIC API.
 type GeolocationService service
 
-// ListResponse ...
-type ListResponse struct {
-	Imdata []struct {
-		GeoSite struct {
-			Attributes struct {
-				ChildAction string    `json:"childAction"`
-				Descr       string    `json:"descr"`
-				Dn          string    `json:"dn"`
-				LcOwn       string    `json:"lcOwn"`
-				ModTs       time.Time `json:"modTs"`
-				Name        string    `json:"name"`
-				NameAlias   string    `json:"nameAlias"`
-				OwnerKey    string    `json:"ownerKey"`
-				OwnerTag    string    `json:"ownerTag"`
-				Status      string    `json:"status"`
-				UID         string    `json:"uid"`
-			} `json:"attributes"`
-			Children []struct {
-				GeoBuilding struct {
-					Attributes struct {
-						ChildAction string    `json:"childAction"`
-						Descr       string    `json:"descr"`
-						LcOwn       string    `json:"lcOwn"`
-						ModTs       time.Time `json:"modTs"`
-						Name        string    `json:"name"`
-						NameAlias   string    `json:"nameAlias"`
-						Rn          string    `json:"rn"`
-						Status      string    `json:"status"`
-						UID         string    `json:"uid"`
-					} `json:"attributes"`
-					Children []struct {
-						GeoFloor struct {
-							Attributes struct {
-								ChildAction string    `json:"childAction"`
-								Descr       string    `json:"descr"`
-								LcOwn       string    `json:"lcOwn"`
-								ModTs       time.Time `json:"modTs"`
-								Name        string    `json:"name"`
-								NameAlias   string    `json:"nameAlias"`
-								Rn          string    `json:"rn"`
-								Status      string    `json:"status"`
-								UID         string    `json:"uid"`
-							} `json:"attributes"`
-							Children []struct {
-								GeoRoom struct {
-									Attributes struct {
-										ChildAction string    `json:"childAction"`
-										Descr       string    `json:"descr"`
-										LcOwn       string    `json:"lcOwn"`
-										ModTs       time.Time `json:"modTs"`
-										Name        string    `json:"name"`
-										NameAlias   string    `json:"nameAlias"`
-										Rn          string    `json:"rn"`
-										Status      string    `json:"status"`
-										UID         string    `json:"uid"`
-									} `json:"attributes"`
-									Children []struct {
-										GeoRack struct {
-											Attributes struct {
-												ChildAction string    `json:"childAction"`
-												Descr       string    `json:"descr"`
-												LcOwn       string    `json:"lcOwn"`
-												ModTs       time.Time `json:"modTs"`
-												Name        string    `json:"name"`
-												NameAlias   string    `json:"nameAlias"`
-												Rn          string    `json:"rn"`
-												Status      string    `json:"status"`
-												UID         string    `json:"uid"`
-											} `json:"attributes"`
-										} `json:"geoRack"`
-									} `json:"children"`
-								} `json:"geoRoom"`
-							} `json:"children"`
-						} `json:"geoFloor"`
-					} `json:"children"`
-				} `json:"geoBuilding"`
-			} `json:"children"`
-		} `json:"geoSite"`
-	} `json:"imdata"`
-}
-
 // GeolocationResponse ...
 type GeolocationResponse struct {
 	TotalCount string        `json:"totalCount"`
 	Imdata     []interface{} `json:"imdata"`
 }
 
-// api/node/mo/uni/fabric/site-%s.json // geo-site name
-// {
-//   "geoSite": {
-//     "attributes": {
-//       "dn": "uni/fabric/site-ABC-Liverpool",
-//       "name": "ABC-Liverpool",
-//       "rn": "site-ABC-Liverpool",
-//       "status": "created"
-//     },
-//     "children": [
-//       {
-//         "geoBuilding": {
-//           "attributes": {
-//             "dn": "uni/fabric/site-ABC-Liverpool/building-Node4-Liverpool",
-//             "name": "Node4-Liverpool",
-//             "rn": "building-Node4-Liverpool",
-//             "status": "created"
-//           },
-//           "children": [
-//             {
-//               "geoFloor": {
-//                 "attributes": {
-//                   "dn": "uni/fabric/site-ABC-Liverpool/building-Node4-Liverpool/floor-Floor-000",
-//                   "name": "Floor-000",
-//                   "rn": "floor-Floor-000",
-//                   "status": "created"
-//                 },
-//                 "children": [
-//                   {
-//                     "geoRoom": {
-//                       "attributes": {
-//                         "dn": "uni/fabric/site-ABC-Liverpool/building-Node4-Liverpool/floor-Floor-000/room-Hall-001",
-//                         "name": "Hall-001",
-//                         "rn": "room-Hall-001",
-//                         "status": "created"
-//                       },
-//                       "children": [
-//                         {
-//                           "geoRow": {
-//                             "attributes": {
-//                               "dn": "uni/fabric/site-ABC-Liverpool/building-Node4-Liverpool/floor-Floor-000/room-Hall-001/row-Row-000",
-//                               "name": "Row-000",
-//                               "rn": "row-Row-000",
-//                               "status": "created"
-//                             },
-//                             "children": [
-//                               {
-//                                 "geoRack": {
-//                                   "attributes": {
-//                                     "dn": "uni/fabric/site-ABC-Liverpool/building-Node4-Liverpool/floor-Floor-000/room-Hall-001/row-Row-000/rack-Rack-1234",
-//                                     "name": "Rack-1234",
-//                                     "rn": "rack-Rack-1234",
-//                                     "status": "created"
-//                                   },
-//                                   "children": []
-//                                 }
-//                               }
-//                             ]
-//                           }
-//                         }
-//                       ]
-//                     }
-//                   }
-//                 ]
-//               }
-//             }
-//           ]
-//         }
-//       }
-//     ]
-//   }
-// }
-// response: {"totalCount":"0","imdata":[]}
+// AddSite ...
+func (s *GeolocationService) AddSite(ctx context.Context, site string) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", site)
 
-// // ADD SITE
-// "api/node/mo/uni/fabric/site-%s.json" site name
-// {
-//    "geoSite":{
-//       "attributes":{
-//          "dn":"uni/fabric/site-Site01",
-//          "name":"Site01",
-//          "rn":"site-Site01",
-//          "status":"created"
-//       },
-//       "children":[]
-//    }
-// }
-//
-// // DELETE SITE
-// api/node/mo/uni/fabric.json
-// {
-//   "fabricInst": {
-//     "attributes": {
-//       "dn": "uni/fabric",
-//       "status": "modified"
-//     },
-//     "children": [
-//       {
-//         "geoSite": {
-//           "attributes": {
-//             "dn": "uni/fabric/site-Site01",
-//             "status": "deleted"
-//           },
-//           "children": []
-//         }
-//       }
-//     ]
-//   }
-// }
-//
-// // LIST SITES
-// api/node/class/geoSite.json
-// response:
-// {
-//   "totalCount": "2",
-//   "imdata": [
-//     {
-//       "geoSite": {
-//         "attributes": {
-//           "childAction": "",
-//           "descr": "",
-//           "dn": "uni/fabric/site-default",
-//           "lcOwn": "local",
-//           "modTs": "2017-07-17T08:22:15.217+00:00",
-//           "monPolDn": "uni/fabric/monfab-default",
-//           "name": "default",
-//           "ownerKey": "",
-//           "ownerTag": "",
-//           "status": "",
-//           "uid": "0"
-//         }
-//       }
-//     },
-//     {
-//       "geoSite": {
-//         "attributes": {
-//           "childAction": "",
-//           "descr": "",
-//           "dn": "uni/fabric/site-Site01",
-//           "lcOwn": "local",
-//           "modTs": "2017-07-17T13:54:14.796+00:00",
-//           "monPolDn": "uni/fabric/monfab-default",
-//           "name": "Site01",
-//           "ownerKey": "",
-//           "ownerTag": "",
-//           "status": "",
-//           "uid": "15374"
-//         }
-//       }
-//     }
-//   ]
-// }
-//
+	var gr GeolocationResponse
+
+	payload := newGeoSiteContainer(site, "", create)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// DeleteSite ...
+func (s *GeolocationService) DeleteSite(ctx context.Context, site string) (GeolocationResponse, error) {
+	path := "api/node/mo/uni/fabric.json"
+
+	var gr GeolocationResponse
+
+	payload := newFabricInstanceContainer(site, delete)
+
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return gr, err
+	}
+
+	return gr, nil
+}
+
+// ListSites ...
+func (s *GeolocationService) ListSites(ctx context.Context, site string) ([]*Site, error) {
+	path := "api/node/class/geoSite.json"
+
+	req, err := s.client.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("list sites: %v", err)
+	}
+
+	// structure of expected response
+	var gr struct {
+		Imdata []GeoSiteContainer `json:"imdata"`
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	if err != nil {
+		return nil, fmt.Errorf("list sites: %v", err)
+	}
+
+	var ss []*Site
+
+	for _, s := range gr.Imdata {
+		ss = append(ss, &Site{Name: s.Name})
+	}
+
+	return ss, nil
+}
 
 // AddBuilding ...
 func (s *GeolocationService) AddBuilding(ctx context.Context, site, building string) (GeolocationResponse, error) {
@@ -578,17 +436,17 @@ func (s *GeolocationService) ListBuildings(ctx context.Context, site string) ([]
 
 	req, err := s.client.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
-		return nil, fmt.Errorf("list floors: %v", err)
+		return nil, fmt.Errorf("list buildings: %v", err)
 	}
 
 	// structure of expected response
 	var gr struct {
-		Imdata []GeoBuilding `json:"imdata"`
+		Imdata []GeoBuildingContainer `json:"imdata"`
 	}
 
 	_, err = s.client.Do(ctx, req, &gr)
 	if err != nil {
-		return nil, fmt.Errorf("list floors: %v", err)
+		return nil, fmt.Errorf("list buildings: %v", err)
 	}
 
 	var bs []*Building
@@ -666,7 +524,7 @@ func (s *GeolocationService) ListFloors(ctx context.Context, site, building stri
 
 	// structure of expected response
 	var gr struct {
-		Imdata []GeoFloor `json:"imdata"`
+		Imdata []GeoFloorContainer `json:"imdata"`
 	}
 
 	_, err = s.client.Do(ctx, req, &gr)
@@ -752,7 +610,7 @@ func (s *GeolocationService) ListRooms(ctx context.Context, site, building, floo
 
 	// structure of expected response
 	var gr struct {
-		Imdata []GeoRoom `json:"imdata"`
+		Imdata []GeoRoomContainer `json:"imdata"`
 	}
 
 	_, err = s.client.Do(ctx, req, &gr)
@@ -841,7 +699,7 @@ func (s *GeolocationService) ListRows(ctx context.Context, site, building, floor
 
 	// structure of expected response
 	var gr struct {
-		Imdata []GeoRow `json:"imdata"`
+		Imdata []GeoRowContainer `json:"imdata"`
 	}
 
 	_, err = s.client.Do(ctx, req, &gr)
@@ -933,7 +791,7 @@ func (s *GeolocationService) ListRacks(ctx context.Context, site, building, floo
 
 	// structure of expected response
 	var gr struct {
-		Imdata []GeoRack `json:"imdata"`
+		Imdata []GeoRackContainer `json:"imdata"`
 	}
 
 	_, err = s.client.Do(ctx, req, &gr)
