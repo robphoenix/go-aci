@@ -102,8 +102,8 @@ type FabricNodeIdentPAttributes struct {
 // methods of the APIC API.
 type FabricMembershipService service
 
-// New instanstatiates a valid ACI fabric membership node
-func (s *FabricMembershipService) New(name, nodeID, podID, serial string) (*Node, error) {
+// NewNode instanstatiates a valid ACI fabric membership node
+func (s *FabricMembershipService) NewNode(name, nodeID, podID, serial string) (*Node, error) {
 	// A valid serial number has a maximum length of 16
 	// and contains only letters and numbers
 	validSerial := regexp.MustCompile(`^[a-zA-Z0-9]{0,16}$`)

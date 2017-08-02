@@ -38,7 +38,7 @@ func main() {
 	}
 
 	// create node
-	node, err := client.FabricMembership.New(
+	node, err := client.FabricMembership.NewNode(
 		"leaf-101",    // name
 		"101",         // id
 		"1",           // pod id
@@ -50,21 +50,25 @@ func main() {
 	}
 
 	// add node
-	err = client.FabricMembership.Add(ctx, node)
+	resp, err := client.FabricMembership.AddNode(ctx, node)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
+	fmt.Printf("resp = %+v\n", resp)
+
 	// // delete node
-	// err = client.FabricMembership.Delete(ctx, node)
+	// resp, err = client.FabricMembership.DeleteNode(ctx, node)
 	// if err != nil {
 	//         log.Fatal(err)
 	//         return
 	// }
+	//
+	// fmt.Printf("resp = %+v\n", resp)
 
 	// list nodes
-	nodes, err := client.FabricMembership.List(ctx)
+	nodes, err := client.FabricMembership.ListNodes(ctx)
 	if err != nil {
 		log.Fatal(err)
 		return

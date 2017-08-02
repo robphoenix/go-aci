@@ -70,8 +70,27 @@ type Client struct {
 	Geolocation      *GeolocationService
 }
 
-type service struct {
-	client *Client
+// Login authenticates a new APIC session, setting the authentication cookie
+func (c *Client) Login(ctx context.Context) error {
+	var lr loginRequest
+	lr.Name = c.Username()
+	lr.Pwd = c.Password()
+
+	req, err := c.NewRequest(http.MethodPost, loginPath, lr)
+	if err != nil {
+		return fmt.Errorf("login for %s: %v", lr.Name, err)
+	}
+
+	var la loginAttributes
+	resp, err := c.Do(ctx, req, &la)
+	if err != nil {
+		return err
+	}
+
+	// set auth cookie
+	c.SetCookie(resp)
+
+	return nil
 }
 
 // Username returns the authentication username of the APIC client
@@ -138,6 +157,10 @@ func NewClient(cfg Config) (*Client, error) {
 	return c, nil
 }
 
+type service struct {
+	client *Client
+}
+
 // NewRequest forms an http request for use with an APIC client
 func (c *Client) NewRequest(method string, path string, body interface{}) (*http.Request, error) {
 	rel, err := url.Parse(path)
@@ -177,7 +200,8 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		default:
-			return nil, fmt.Errorf("%v %v: %d %v", req.Method, req.URL.String(), resp.StatusCode, err)
+			// response can be <nil> in case of io timeout
+			return nil, err // fmt.Errorf("%v %v: %d", req.Method, req.URL.String(), resp.StatusCode, err)
 		}
 	}
 
@@ -222,29 +246,6 @@ type loginAttributes struct {
 	SessionID              string `json:"sessionId,omitempty"`
 	Token                  string `json:"token,omitempty"`
 	UserName               string `json:"userName,omitempty"`
-}
-
-// Login authenticates a new APIC session, setting the authentication cookie
-func (c *Client) Login(ctx context.Context) error {
-	var lr loginRequest
-	lr.Name = c.Username()
-	lr.Pwd = c.Password()
-
-	req, err := c.NewRequest(http.MethodPost, loginPath, lr)
-	if err != nil {
-		return fmt.Errorf("login for %s: %v", lr.Name, err)
-	}
-
-	var la loginAttributes
-	resp, err := c.Do(ctx, req, &la)
-	if err != nil {
-		return err
-	}
-
-	// set auth cookie
-	c.SetCookie(resp)
-
-	return nil
 }
 
 // ErrorResponse reports any errors caused by an API request.
