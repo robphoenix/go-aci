@@ -3,6 +3,7 @@ Go API wrapper for Cisco ACI
 
 [![GoDoc](https://godoc.org/github.com/robphoenix/go-aci/aci?status.svg)](http://godoc.org/github.com/robphoenix/go-aci/aci)
 [![Go Report Card](https://goreportcard.com/badge/github.com/robphoenix/go-aci)](https://goreportcard.com/report/github.com/robphoenix/go-aci)
+[![stability-experimental](https://img.shields.io/badge/stability-experimental-orange.svg)](https://github.com/emersion/stability-badges#experimental)
 
 ```go
 package main
