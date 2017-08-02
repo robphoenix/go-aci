@@ -60,7 +60,7 @@ type FabricInstanceContainer struct {
 // FabricInstance ...
 type FabricInstance struct {
 	GeoAttrs `json:"attributes"`
-	Children []GeoSiteContainer `json:"children"`
+	GeoSites []GeoSiteContainer `json:"children"`
 }
 
 func newFabricInstanceContainer(site, action string) FabricInstanceContainer {
@@ -71,7 +71,7 @@ func newFabricInstanceContainer(site, action string) FabricInstanceContainer {
 				Dn:     "uni/fabric",
 				Status: modify,
 			},
-			Children: c,
+			GeoSites: c,
 		},
 	}
 }
@@ -83,8 +83,8 @@ type GeoSiteContainer struct {
 
 // GeoSite ...
 type GeoSite struct {
-	GeoAttrs `json:"attributes,omitempty"`
-	Children []GeoBuildingContainer `json:"children,omitempty"`
+	GeoAttrs     `json:"attributes,omitempty"`
+	GeoBuildings []GeoBuildingContainer `json:"children,omitempty"`
 }
 
 func newGeoSiteContainer(site, building, action string) GeoSiteContainer {
@@ -105,7 +105,7 @@ func newGeoSiteContainer(site, building, action string) GeoSiteContainer {
 				Dn:     fmt.Sprintf("uni/fabric/site-%s", site),
 				Status: action,
 			},
-			Children: c,
+			GeoBuildings: c,
 		},
 	}
 }
@@ -117,8 +117,8 @@ type GeoBuildingContainer struct {
 
 // GeoBuilding ...
 type GeoBuilding struct {
-	GeoAttrs `json:"attributes,omitempty"`
-	Children []GeoFloorContainer `json:"children,omitempty"`
+	GeoAttrs  `json:"attributes,omitempty"`
+	GeoFloors []GeoFloorContainer `json:"children,omitempty"`
 }
 
 func newGeoBuildingContainer(site, building, floor, action string) GeoBuildingContainer {
@@ -139,7 +139,7 @@ func newGeoBuildingContainer(site, building, floor, action string) GeoBuildingCo
 				Dn:     fmt.Sprintf("uni/fabric/site-%s/building-%s", site, building),
 				Status: action,
 			},
-			Children: c,
+			GeoFloors: c,
 		},
 	}
 }
@@ -152,7 +152,7 @@ type GeoFloorContainer struct {
 // GeoFloor ...
 type GeoFloor struct {
 	GeoAttrs `json:"attributes,omitempty"`
-	Children []GeoRoomContainer `json:"children,omitempty"`
+	GeoRooms []GeoRoomContainer `json:"children,omitempty"`
 }
 
 func newGeoFloorContainer(site, building, floor, room, action string) GeoFloorContainer {
@@ -178,7 +178,7 @@ func newGeoFloorContainer(site, building, floor, room, action string) GeoFloorCo
 				),
 				Status: action,
 			},
-			Children: c,
+			GeoRooms: c,
 		},
 	}
 }
@@ -191,7 +191,7 @@ type GeoRoomContainer struct {
 // GeoRoom ...
 type GeoRoom struct {
 	GeoAttrs `json:"attributes,omitempty"`
-	Children []GeoRowContainer `json:"children,omitempty"`
+	GeoRows  []GeoRowContainer `json:"children,omitempty"`
 }
 
 func newGeoRoomContainer(site, building, floor, room, row, action string) GeoRoomContainer {
@@ -218,7 +218,7 @@ func newGeoRoomContainer(site, building, floor, room, row, action string) GeoRoo
 				),
 				Status: action,
 			},
-			Children: c,
+			GeoRows: c,
 		},
 	}
 }
@@ -231,7 +231,7 @@ type GeoRowContainer struct {
 // GeoRow ...
 type GeoRow struct {
 	GeoAttrs `json:"attributes,omitempty"`
-	Children []GeoRackContainer `json:"children,omitempty"`
+	GeoRacks []GeoRackContainer `json:"children,omitempty"`
 }
 
 func newGeoRowContainer(site, building, floor, room, row, rack, action string) GeoRowContainer {
@@ -261,7 +261,7 @@ func newGeoRowContainer(site, building, floor, room, row, rack, action string) G
 				Rn:     fmt.Sprintf("row-%s", row),
 				Status: action,
 			},
-			Children: c,
+			GeoRacks: c,
 		},
 	}
 }
@@ -274,7 +274,7 @@ type GeoRackContainer struct {
 // GeoRack ...
 type GeoRack struct {
 	GeoAttrs `json:"attributes,omitempty"`
-	Children []interface{} `json:"children,omitempty"`
+	GeoNodes []interface{} `json:"children,omitempty"`
 }
 
 func newGeoRackContainer(site, building, floor, room, row, rack, action string) GeoRackContainer {
@@ -294,7 +294,7 @@ func newGeoRackContainer(site, building, floor, room, row, rack, action string) 
 				Rn:     fmt.Sprintf("rack-%s", rack),
 				Status: action,
 			},
-			Children: nil,
+			GeoNodes: nil,
 		},
 	}
 }
