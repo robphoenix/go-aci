@@ -62,8 +62,8 @@ type FabricInstance struct {
 	GeoSites []GeoSiteContainer `json:"children"`
 }
 
-func newFabricInstanceContainer(site, action string) FabricInstanceContainer {
-	c := []GeoSiteContainer{newGeoSiteContainer(site, "", action)}
+func newFabricInstanceContainer(st Site, action string) FabricInstanceContainer {
+	c := []GeoSiteContainer{newGeoSiteContainer(st, Building{}, action)}
 	return FabricInstanceContainer{
 		FabricInstance: FabricInstance{
 			GeoAttrs: GeoAttrs{
@@ -86,7 +86,7 @@ type GeoSite struct {
 	GeoBuildings []GeoBuildingContainer `json:"children,omitempty"`
 }
 
-func newGeoSiteContainer(site, building, action string) GeoSiteContainer {
+func newGeoSiteContainer(st Site, b Building, action string) GeoSiteContainer {
 	c := []GeoBuildingContainer{}
 	// The building variable will be an empty string if
 	// it is the site that is being added/deleted.
@@ -94,14 +94,15 @@ func newGeoSiteContainer(site, building, action string) GeoSiteContainer {
 	// GeoBuildingContainer's to c.
 	// If it is the building that is being added/deleted
 	// then the site just needs to be modified.
-	if building != "" {
-		c = append(c, newGeoBuildingContainer(site, building, "", action))
+	if b.Name != "" {
+		c = append(c, newGeoBuildingContainer(st, b, Floor{}, action))
 		action = modify
 	}
 	return GeoSiteContainer{
 		GeoSite: GeoSite{
 			GeoAttrs: GeoAttrs{
-				Dn:     fmt.Sprintf("uni/fabric/site-%s", site),
+				Dn:     fmt.Sprintf("uni/fabric/site-%s", st.Name),
+				Descr:  st.Description,
 				Status: action,
 			},
 			GeoBuildings: c,
@@ -120,7 +121,7 @@ type GeoBuilding struct {
 	GeoFloors []GeoFloorContainer `json:"children,omitempty"`
 }
 
-func newGeoBuildingContainer(site, building, floor, action string) GeoBuildingContainer {
+func newGeoBuildingContainer(st Site, b Building, f Floor, action string) GeoBuildingContainer {
 	c := []GeoFloorContainer{}
 	// The floor variable will be an empty string if
 	// it is the building that is being added/deleted.
@@ -128,14 +129,15 @@ func newGeoBuildingContainer(site, building, floor, action string) GeoBuildingCo
 	// GeoFloorContainer's to c.
 	// If it is the floor that is being added/deleted
 	// then the building just needs to be modified.
-	if floor != "" {
-		c = append(c, newGeoFloorContainer(site, building, floor, "", action))
+	if f.Name != "" {
+		c = append(c, newGeoFloorContainer(st, b, f, Room{}, action))
 		action = modify
 	}
 	return GeoBuildingContainer{
 		GeoBuilding: GeoBuilding{
 			GeoAttrs: GeoAttrs{
-				Dn:     fmt.Sprintf("uni/fabric/site-%s/building-%s", site, building),
+				Dn:     fmt.Sprintf("uni/fabric/site-%s/building-%s", st.Name, b.Name),
+				Descr:  b.Description,
 				Status: action,
 			},
 			GeoFloors: c,
@@ -154,7 +156,7 @@ type GeoFloor struct {
 	GeoRooms []GeoRoomContainer `json:"children,omitempty"`
 }
 
-func newGeoFloorContainer(site, building, floor, room, action string) GeoFloorContainer {
+func newGeoFloorContainer(st Site, b Building, f Floor, rm Room, action string) GeoFloorContainer {
 	c := []GeoRoomContainer{}
 	// The room variable will be an empty string if
 	// it is the floor that is being added/deleted.
@@ -162,8 +164,8 @@ func newGeoFloorContainer(site, building, floor, room, action string) GeoFloorCo
 	// GeoRowContainer's to c.
 	// If it is the room that is being added/deleted
 	// then the floor just needs to be modified.
-	if room != "" {
-		c = append(c, newGeoRoomContainer(site, building, floor, room, "", action))
+	if rm.Name != "" {
+		c = append(c, newGeoRoomContainer(st, b, f, rm, Row{}, action))
 		action = modify
 	}
 	return GeoFloorContainer{
@@ -171,10 +173,9 @@ func newGeoFloorContainer(site, building, floor, room, action string) GeoFloorCo
 			GeoAttrs: GeoAttrs{
 				Dn: fmt.Sprintf(
 					"uni/fabric/site-%s/building-%s/floor-%s",
-					site,
-					building,
-					floor,
+					st.Name, b.Name, f.Name,
 				),
+				Descr:  f.Description,
 				Status: action,
 			},
 			GeoRooms: c,
@@ -193,7 +194,7 @@ type GeoRoom struct {
 	GeoRows  []GeoRowContainer `json:"children,omitempty"`
 }
 
-func newGeoRoomContainer(site, building, floor, room, row, action string) GeoRoomContainer {
+func newGeoRoomContainer(st Site, b Building, f Floor, rm Room, rw Row, action string) GeoRoomContainer {
 	c := []GeoRowContainer{}
 	// The row variable will be an empty string if
 	// it is the room that is being added/deleted.
@@ -201,8 +202,8 @@ func newGeoRoomContainer(site, building, floor, room, row, action string) GeoRoo
 	// GeoRowContainer's to c.
 	// If it is the row that is being added/deleted
 	// then the room just needs to be modified.
-	if row != "" {
-		c = append(c, newGeoRowContainer(site, building, floor, room, row, "", action))
+	if rw.Name != "" {
+		c = append(c, newGeoRowContainer(st, b, f, rm, rw, Rack{}, action))
 		action = modify
 	}
 	return GeoRoomContainer{
@@ -210,11 +211,9 @@ func newGeoRoomContainer(site, building, floor, room, row, action string) GeoRoo
 			GeoAttrs: GeoAttrs{
 				Dn: fmt.Sprintf(
 					"uni/fabric/site-%s/building-%s/floor-%s/room-%s",
-					site,
-					building,
-					floor,
-					room,
+					st.Name, b.Name, f.Name, rm.Name,
 				),
+				Descr:  rm.Description,
 				Status: action,
 			},
 			GeoRows: c,
@@ -233,7 +232,7 @@ type GeoRow struct {
 	GeoRacks []GeoRackContainer `json:"children,omitempty"`
 }
 
-func newGeoRowContainer(site, building, floor, room, row, rack, action string) GeoRowContainer {
+func newGeoRowContainer(st Site, b Building, f Floor, rm Room, rw Row, rk Rack, action string) GeoRowContainer {
 	c := []GeoRackContainer{}
 	// The rack variable will be an empty string if
 	// it is the row that is being added/deleted.
@@ -241,8 +240,8 @@ func newGeoRowContainer(site, building, floor, room, row, rack, action string) G
 	// GeoRackContainer's to c.
 	// If it is the Rack that is being added/deleted
 	// then the row just needs to be modified.
-	if rack != "" {
-		c = append(c, newGeoRackContainer(site, building, floor, room, row, rack, action))
+	if rk.Name != "" {
+		c = append(c, newGeoRackContainer(st, b, f, rm, rw, rk, action))
 		action = modify
 	}
 	return GeoRowContainer{
@@ -250,14 +249,11 @@ func newGeoRowContainer(site, building, floor, room, row, rack, action string) G
 			GeoAttrs: GeoAttrs{
 				Dn: fmt.Sprintf(
 					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s",
-					site,
-					building,
-					floor,
-					room,
-					row,
+					st.Name, b.Name, f.Name, rm.Name, rw.Name,
 				),
-				Name:   row,
-				Rn:     fmt.Sprintf("row-%s", row),
+				Name:   rw.Name,
+				Descr:  rw.Description,
+				Rn:     fmt.Sprintf("row-%s", rw.Name),
 				Status: action,
 			},
 			GeoRacks: c,
@@ -276,21 +272,17 @@ type GeoRack struct {
 	GeoNodes []interface{} `json:"children,omitempty"`
 }
 
-func newGeoRackContainer(site, building, floor, room, row, rack, action string) GeoRackContainer {
+func newGeoRackContainer(st Site, b Building, f Floor, rm Room, rw Row, rk Rack, action string) GeoRackContainer {
 	return GeoRackContainer{
 		GeoRack: GeoRack{
 			GeoAttrs: GeoAttrs{
 				Dn: fmt.Sprintf(
 					"uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s",
-					site,
-					building,
-					floor,
-					room,
-					row,
-					rack,
+					st.Name, b.Name, f.Name, rm.Name, rw.Name, rk.Name,
 				),
-				Name:   rack,
-				Rn:     fmt.Sprintf("rack-%s", rack),
+				Name:   rk.Name,
+				Descr:  rk.Description,
+				Rn:     fmt.Sprintf("rack-%s", rk.Name),
 				Status: action,
 			},
 			GeoNodes: nil,
@@ -341,10 +333,10 @@ func (s *GeolocationService) ListFullSites(ctx context.Context) ([]*Site, error)
 		return nil, fmt.Errorf("list all: %v", err)
 	}
 
-	var ss []*Site
+	var sites []*Site
 
 	for _, site := range gs.Imdata {
-		s := &Site{Name: site.Name}
+		st := &Site{Name: site.Name}
 		for _, building := range site.GeoBuildings {
 			b := &Building{Name: building.Name}
 			for _, floor := range building.GeoFloors {
@@ -363,21 +355,21 @@ func (s *GeolocationService) ListFullSites(ctx context.Context) ([]*Site, error)
 				}
 				b.Floors = append(b.Floors, f)
 			}
-			s.Buildings = append(s.Buildings, b)
+			st.Buildings = append(st.Buildings, b)
 		}
-		ss = append(ss, s)
+		sites = append(sites, st)
 	}
 
-	return ss, nil
+	return sites, nil
 }
 
 // AddSite ...
-func (s *GeolocationService) AddSite(ctx context.Context, site string) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", site)
+func (s *GeolocationService) AddSite(ctx context.Context, st Site) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", st.Name)
 
 	var gr GeolocationResponse
 
-	payload := newGeoSiteContainer(site, "", createModify)
+	payload := newGeoSiteContainer(st, Building{}, createModify)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -393,12 +385,12 @@ func (s *GeolocationService) AddSite(ctx context.Context, site string) (Geolocat
 }
 
 // DeleteSite ...
-func (s *GeolocationService) DeleteSite(ctx context.Context, site string) (GeolocationResponse, error) {
+func (s *GeolocationService) DeleteSite(ctx context.Context, st Site) (GeolocationResponse, error) {
 	path := "api/node/mo/uni/fabric.json"
 
 	var gr GeolocationResponse
 
-	payload := newFabricInstanceContainer(site, delete)
+	payload := newFabricInstanceContainer(st, delete)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -432,22 +424,25 @@ func (s *GeolocationService) ListSites(ctx context.Context) ([]*Site, error) {
 		return nil, fmt.Errorf("list sites: %v", err)
 	}
 
-	var ss []*Site
+	var sites []*Site
 
-	for _, s := range gr.Imdata {
-		ss = append(ss, &Site{Name: s.Name})
+	for _, site := range gr.Imdata {
+		sites = append(sites, &Site{
+			Name:        site.Name,
+			Description: site.Descr,
+		})
 	}
 
-	return ss, nil
+	return sites, nil
 }
 
 // AddBuilding ...
-func (s *GeolocationService) AddBuilding(ctx context.Context, site, building string) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s.json", site, building)
+func (s *GeolocationService) AddBuilding(ctx context.Context, st Site, b Building) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s.json", st.Name, b.Name)
 
 	var gr GeolocationResponse
 
-	payload := newGeoBuildingContainer(site, building, "", createModify)
+	payload := newGeoBuildingContainer(st, b, Floor{}, createModify)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -463,12 +458,12 @@ func (s *GeolocationService) AddBuilding(ctx context.Context, site, building str
 }
 
 // DeleteBuilding ...
-func (s *GeolocationService) DeleteBuilding(ctx context.Context, site, building string) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", site)
+func (s *GeolocationService) DeleteBuilding(ctx context.Context, st Site, b Building) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", st.Name)
 
 	var gr GeolocationResponse
 
-	payload := newGeoSiteContainer(site, building, delete)
+	payload := newGeoSiteContainer(st, b, delete)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -484,8 +479,8 @@ func (s *GeolocationService) DeleteBuilding(ctx context.Context, site, building 
 }
 
 // ListBuildings ...
-func (s *GeolocationService) ListBuildings(ctx context.Context, site string) ([]*Building, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json?query-target=children&target-subtree-class=geoRow", site)
+func (s *GeolocationService) ListBuildings(ctx context.Context, st Site) ([]*Building, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json?query-target=children&target-subtree-class=geoRow", st.Name)
 
 	req, err := s.client.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
@@ -502,27 +497,25 @@ func (s *GeolocationService) ListBuildings(ctx context.Context, site string) ([]
 		return nil, fmt.Errorf("list buildings: %v", err)
 	}
 
-	var bs []*Building
+	var buildings []*Building
 
-	for _, b := range gr.Imdata {
-		bs = append(bs, &Building{Name: b.Name})
+	for _, building := range gr.Imdata {
+		buildings = append(buildings, &Building{
+			Name:        building.Name,
+			Description: building.Descr,
+		})
 	}
 
-	return bs, nil
+	return buildings, nil
 }
 
 // AddFloor ...
-func (s *GeolocationService) AddFloor(ctx context.Context, site, building, floor string) (GeolocationResponse, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json",
-		site,
-		building,
-		floor,
-	)
+func (s *GeolocationService) AddFloor(ctx context.Context, st Site, b Building, f Floor) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json", st.Name, b.Name, f.Name)
 
 	var gr GeolocationResponse
 
-	payload := newGeoFloorContainer(site, building, floor, "", createModify)
+	payload := newGeoFloorContainer(st, b, f, Room{}, createModify)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -538,16 +531,12 @@ func (s *GeolocationService) AddFloor(ctx context.Context, site, building, floor
 }
 
 // DeleteFloor ...
-func (s *GeolocationService) DeleteFloor(ctx context.Context, site, building, floor string) (GeolocationResponse, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s.json",
-		site,
-		building,
-	)
+func (s *GeolocationService) DeleteFloor(ctx context.Context, st Site, b Building, f Floor) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s.json", st.Name, b.Name)
 
 	var gr GeolocationResponse
 
-	payload := newGeoBuildingContainer(site, building, floor, delete)
+	payload := newGeoBuildingContainer(st, b, f, delete)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -563,12 +552,8 @@ func (s *GeolocationService) DeleteFloor(ctx context.Context, site, building, fl
 }
 
 // ListFloors ...
-func (s *GeolocationService) ListFloors(ctx context.Context, site, building string) ([]*Floor, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s.json?query-target=children&target-subtree-class=geoRow",
-		site,
-		building,
-	)
+func (s *GeolocationService) ListFloors(ctx context.Context, st Site, b Building) ([]*Floor, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s.json?query-target=children&target-subtree-class=geoRow", st.Name, b.Name)
 
 	req, err := s.client.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
@@ -585,28 +570,25 @@ func (s *GeolocationService) ListFloors(ctx context.Context, site, building stri
 		return nil, fmt.Errorf("list floors: %v", err)
 	}
 
-	var fs []*Floor
+	var floors []*Floor
 
-	for _, f := range gr.Imdata {
-		fs = append(fs, &Floor{Name: f.Name})
+	for _, floor := range gr.Imdata {
+		floors = append(floors, &Floor{
+			Name:        floor.Name,
+			Description: floor.Descr,
+		})
 	}
 
-	return fs, nil
+	return floors, nil
 }
 
 // AddRoom ...
-func (s *GeolocationService) AddRoom(ctx context.Context, site, building, floor, room string) (GeolocationResponse, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json",
-		site,
-		building,
-		floor,
-		room,
-	)
+func (s *GeolocationService) AddRoom(ctx context.Context, st Site, b Building, f Floor, rm Room) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json", st.Name, b.Name, f.Name, rm.Name)
 
 	var gr GeolocationResponse
 
-	payload := newGeoRoomContainer(site, building, floor, room, "", createModify)
+	payload := newGeoRoomContainer(st, b, f, rm, Row{}, createModify)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -622,17 +604,12 @@ func (s *GeolocationService) AddRoom(ctx context.Context, site, building, floor,
 }
 
 // DeleteRoom ...
-func (s *GeolocationService) DeleteRoom(ctx context.Context, site, building, floor, room string) (GeolocationResponse, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json",
-		site,
-		building,
-		floor,
-	)
+func (s *GeolocationService) DeleteRoom(ctx context.Context, st Site, b Building, f Floor, rm Room) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json", st.Name, b.Name, f.Name)
 
 	var gr GeolocationResponse
 
-	payload := newGeoFloorContainer(site, building, floor, room, delete)
+	payload := newGeoFloorContainer(st, b, f, rm, delete)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -648,12 +625,10 @@ func (s *GeolocationService) DeleteRoom(ctx context.Context, site, building, flo
 }
 
 // ListRooms ...
-func (s *GeolocationService) ListRooms(ctx context.Context, site, building, floor string) ([]*Room, error) {
+func (s *GeolocationService) ListRooms(ctx context.Context, st Site, b Building, f Floor) ([]*Room, error) {
 	path := fmt.Sprintf(
 		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json?query-target=children&target-subtree-class=geoRow",
-		site,
-		building,
-		floor,
+		st.Name, b.Name, f.Name,
 	)
 
 	req, err := s.client.NewRequest(http.MethodGet, path, nil)
@@ -671,29 +646,28 @@ func (s *GeolocationService) ListRooms(ctx context.Context, site, building, floo
 		return nil, fmt.Errorf("list rooms: %v", err)
 	}
 
-	var rs []*Room
+	var rooms []*Room
 
-	for _, r := range gr.Imdata {
-		rs = append(rs, &Room{Name: r.Name})
+	for _, room := range gr.Imdata {
+		rooms = append(rooms, &Room{
+			Name:        room.Name,
+			Description: room.Descr,
+		})
 	}
 
-	return rs, nil
+	return rooms, nil
 }
 
 // AddRow ...
-func (s *GeolocationService) AddRow(ctx context.Context, site, building, floor, room, row string) (GeolocationResponse, error) {
+func (s *GeolocationService) AddRow(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row) (GeolocationResponse, error) {
 	path := fmt.Sprintf(
 		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json",
-		site,
-		building,
-		floor,
-		room,
-		row,
+		st.Name, b.Name, f.Name, rm.Name, rw.Name,
 	)
 
 	var gr GeolocationResponse
 
-	payload := newGeoRowContainer(site, building, floor, room, row, "", createModify)
+	payload := newGeoRowContainer(st, b, f, rm, rw, Rack{}, createModify)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -709,18 +683,15 @@ func (s *GeolocationService) AddRow(ctx context.Context, site, building, floor, 
 }
 
 // DeleteRow ...
-func (s *GeolocationService) DeleteRow(ctx context.Context, site, building, floor, room, row string) (GeolocationResponse, error) {
+func (s *GeolocationService) DeleteRow(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row) (GeolocationResponse, error) {
 	path := fmt.Sprintf(
 		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json",
-		site,
-		building,
-		floor,
-		room,
+		st.Name, b.Name, f.Name, rm.Name,
 	)
 
 	var gr GeolocationResponse
 
-	payload := newGeoRoomContainer(site, building, floor, room, row, delete)
+	payload := newGeoRoomContainer(st, b, f, rm, rw, delete)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -736,13 +707,10 @@ func (s *GeolocationService) DeleteRow(ctx context.Context, site, building, floo
 }
 
 // ListRows ...
-func (s *GeolocationService) ListRows(ctx context.Context, site, building, floor, room string) ([]*Row, error) {
+func (s *GeolocationService) ListRows(ctx context.Context, st Site, b Building, f Floor, rm Room) ([]*Row, error) {
 	path := fmt.Sprintf(
 		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json?query-target=children&target-subtree-class=geoRow",
-		site,
-		building,
-		floor,
-		room,
+		st.Name, b.Name, f.Name, rm.Name,
 	)
 
 	req, err := s.client.NewRequest(http.MethodGet, path, nil)
@@ -760,30 +728,28 @@ func (s *GeolocationService) ListRows(ctx context.Context, site, building, floor
 		return nil, fmt.Errorf("list rows: %v", err)
 	}
 
-	var rs []*Row
+	var rows []*Row
 
-	for _, r := range gr.Imdata {
-		rs = append(rs, &Row{Name: r.Name})
+	for _, row := range gr.Imdata {
+		rows = append(rows, &Row{
+			Name:        row.Name,
+			Description: row.Descr,
+		})
 	}
 
-	return rs, nil
+	return rows, nil
 }
 
 // AddRack ...
-func (s *GeolocationService) AddRack(ctx context.Context, site, building, floor, room, row, rack string) (GeolocationResponse, error) {
+func (s *GeolocationService) AddRack(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row, rk Rack) (GeolocationResponse, error) {
 	path := fmt.Sprintf(
 		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s.json",
-		site,
-		building,
-		floor,
-		room,
-		row,
-		rack,
+		st.Name, b.Name, f.Name, rm.Name, rw.Name, rk.Name,
 	)
 
 	var gr GeolocationResponse
 
-	payload := newGeoRackContainer(site, building, floor, room, row, rack, createModify)
+	payload := newGeoRackContainer(st, b, f, rm, rw, rk, createModify)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -799,19 +765,15 @@ func (s *GeolocationService) AddRack(ctx context.Context, site, building, floor,
 }
 
 // DeleteRack ...
-func (s *GeolocationService) DeleteRack(ctx context.Context, site, building, floor, room, row, rack string) (GeolocationResponse, error) {
+func (s *GeolocationService) DeleteRack(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row, rk Rack) (GeolocationResponse, error) {
 	path := fmt.Sprintf(
 		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json",
-		site,
-		building,
-		floor,
-		room,
-		row,
+		st.Name, b.Name, f.Name, rm.Name, rw.Name,
 	)
 
 	var gr GeolocationResponse
 
-	payload := newGeoRowContainer(site, building, floor, room, row, rack, delete)
+	payload := newGeoRowContainer(st, b, f, rm, rw, rk, delete)
 
 	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
@@ -827,14 +789,10 @@ func (s *GeolocationService) DeleteRack(ctx context.Context, site, building, flo
 }
 
 // ListRacks ...
-func (s *GeolocationService) ListRacks(ctx context.Context, site, building, floor, room, row string) ([]*Rack, error) {
+func (s *GeolocationService) ListRacks(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row) ([]*Rack, error) {
 	path := fmt.Sprintf(
 		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json?query-target=children&target-subtree-class=geoRack",
-		site,
-		building,
-		floor,
-		room,
-		row,
+		st.Name, b.Name, f.Name, rm.Name, rw.Name,
 	)
 
 	req, err := s.client.NewRequest(http.MethodGet, path, nil)
@@ -852,11 +810,14 @@ func (s *GeolocationService) ListRacks(ctx context.Context, site, building, floo
 		return nil, fmt.Errorf("list racks: %v", err)
 	}
 
-	var rs []*Rack
+	var racks []*Rack
 
-	for _, r := range gr.Imdata {
-		rs = append(rs, &Rack{Name: r.Name})
+	for _, rack := range gr.Imdata {
+		racks = append(racks, &Rack{
+			Name:        rack.Name,
+			Description: rack.Descr,
+		})
 	}
 
-	return rs, nil
+	return racks, nil
 }
