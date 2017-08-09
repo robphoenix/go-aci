@@ -68,7 +68,7 @@ func newFabricInstanceContainer(st Site, action string) FabricInstanceContainer 
 		FabricInstance: FabricInstance{
 			GeoAttrs: GeoAttrs{
 				Dn:     "uni/fabric",
-				Status: modify,
+				Status: modified,
 			},
 			GeoSites: c,
 		},
@@ -96,7 +96,7 @@ func newGeoSiteContainer(st Site, b Building, action string) GeoSiteContainer {
 	// then the site just needs to be modified.
 	if b.Name != "" {
 		c = append(c, newGeoBuildingContainer(st, b, Floor{}, action))
-		action = modify
+		action = modified
 	}
 	return GeoSiteContainer{
 		GeoSite: GeoSite{
@@ -131,7 +131,7 @@ func newGeoBuildingContainer(st Site, b Building, f Floor, action string) GeoBui
 	// then the building just needs to be modified.
 	if f.Name != "" {
 		c = append(c, newGeoFloorContainer(st, b, f, Room{}, action))
-		action = modify
+		action = modified
 	}
 	return GeoBuildingContainer{
 		GeoBuilding: GeoBuilding{
@@ -166,7 +166,7 @@ func newGeoFloorContainer(st Site, b Building, f Floor, rm Room, action string) 
 	// then the floor just needs to be modified.
 	if rm.Name != "" {
 		c = append(c, newGeoRoomContainer(st, b, f, rm, Row{}, action))
-		action = modify
+		action = modified
 	}
 	return GeoFloorContainer{
 		GeoFloor: GeoFloor{
@@ -204,7 +204,7 @@ func newGeoRoomContainer(st Site, b Building, f Floor, rm Room, rw Row, action s
 	// then the room just needs to be modified.
 	if rw.Name != "" {
 		c = append(c, newGeoRowContainer(st, b, f, rm, rw, Rack{}, action))
-		action = modify
+		action = modified
 	}
 	return GeoRoomContainer{
 		GeoRoom: GeoRoom{
@@ -242,7 +242,7 @@ func newGeoRowContainer(st Site, b Building, f Floor, rm Room, rw Row, rk Rack, 
 	// then the row just needs to be modified.
 	if rk.Name != "" {
 		c = append(c, newGeoRackContainer(st, b, f, rm, rw, rk, action))
-		action = modify
+		action = modified
 	}
 	return GeoRowContainer{
 		GeoRow: GeoRow{
@@ -309,8 +309,8 @@ type GeolocationResponse struct {
 	Imdata     []interface{} `json:"imdata"`
 }
 
-// // AddFullSite ...
-// func (s *GeolocationService) AddFullSite(ctx context.Context, site *Site) (GeolocationResponse, error) {
+// // UpdateSite ...
+// func (s *GeolocationService) UpdateSite(ctx context.Context, site *Site) (GeolocationResponse, error) {
 //
 // }
 
@@ -363,461 +363,24 @@ func (s *GeolocationService) ListFullSites(ctx context.Context) ([]*Site, error)
 	return sites, nil
 }
 
-// AddSite ...
-func (s *GeolocationService) AddSite(ctx context.Context, st Site) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", st.Name)
-
-	var gr GeolocationResponse
-
-	payload := newGeoSiteContainer(st, Building{}, createModify)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// DeleteSite ...
-func (s *GeolocationService) DeleteSite(ctx context.Context, st Site) (GeolocationResponse, error) {
-	path := "api/node/mo/uni/fabric.json"
-
-	var gr GeolocationResponse
-
-	payload := newFabricInstanceContainer(st, delete)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// ListSites ...
-func (s *GeolocationService) ListSites(ctx context.Context) ([]*Site, error) {
-	path := "api/node/class/geoSite.json"
-
-	req, err := s.client.NewRequest(http.MethodGet, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("list sites: %v", err)
-	}
-
-	// structure of expected response
-	var gr struct {
-		Imdata []GeoSiteContainer `json:"imdata"`
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return nil, fmt.Errorf("list sites: %v", err)
-	}
-
-	var sites []*Site
-
-	for _, site := range gr.Imdata {
-		sites = append(sites, &Site{
-			Name:        site.Name,
-			Description: site.Descr,
-		})
-	}
-
-	return sites, nil
-}
-
-// AddBuilding ...
-func (s *GeolocationService) AddBuilding(ctx context.Context, st Site, b Building) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s.json", st.Name, b.Name)
-
-	var gr GeolocationResponse
-
-	payload := newGeoBuildingContainer(st, b, Floor{}, createModify)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// DeleteBuilding ...
-func (s *GeolocationService) DeleteBuilding(ctx context.Context, st Site, b Building) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", st.Name)
-
-	var gr GeolocationResponse
-
-	payload := newGeoSiteContainer(st, b, delete)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// ListBuildings ...
-func (s *GeolocationService) ListBuildings(ctx context.Context, st Site) ([]*Building, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json?query-target=children&target-subtree-class=geoRow", st.Name)
-
-	req, err := s.client.NewRequest(http.MethodGet, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("list buildings: %v", err)
-	}
-
-	// structure of expected response
-	var gr struct {
-		Imdata []GeoBuildingContainer `json:"imdata"`
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return nil, fmt.Errorf("list buildings: %v", err)
-	}
-
-	var buildings []*Building
-
-	for _, building := range gr.Imdata {
-		buildings = append(buildings, &Building{
-			Name:        building.Name,
-			Description: building.Descr,
-		})
-	}
-
-	return buildings, nil
-}
-
-// AddFloor ...
-func (s *GeolocationService) AddFloor(ctx context.Context, st Site, b Building, f Floor) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json", st.Name, b.Name, f.Name)
-
-	var gr GeolocationResponse
-
-	payload := newGeoFloorContainer(st, b, f, Room{}, createModify)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// DeleteFloor ...
-func (s *GeolocationService) DeleteFloor(ctx context.Context, st Site, b Building, f Floor) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s.json", st.Name, b.Name)
-
-	var gr GeolocationResponse
-
-	payload := newGeoBuildingContainer(st, b, f, delete)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// ListFloors ...
-func (s *GeolocationService) ListFloors(ctx context.Context, st Site, b Building) ([]*Floor, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s.json?query-target=children&target-subtree-class=geoRow", st.Name, b.Name)
-
-	req, err := s.client.NewRequest(http.MethodGet, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("list floors: %v", err)
-	}
-
-	// structure of expected response
-	var gr struct {
-		Imdata []GeoFloorContainer `json:"imdata"`
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return nil, fmt.Errorf("list floors: %v", err)
-	}
-
-	var floors []*Floor
-
-	for _, floor := range gr.Imdata {
-		floors = append(floors, &Floor{
-			Name:        floor.Name,
-			Description: floor.Descr,
-		})
-	}
-
-	return floors, nil
-}
-
-// AddRoom ...
-func (s *GeolocationService) AddRoom(ctx context.Context, st Site, b Building, f Floor, rm Room) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json", st.Name, b.Name, f.Name, rm.Name)
-
-	var gr GeolocationResponse
-
-	payload := newGeoRoomContainer(st, b, f, rm, Row{}, createModify)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// DeleteRoom ...
-func (s *GeolocationService) DeleteRoom(ctx context.Context, st Site, b Building, f Floor, rm Room) (GeolocationResponse, error) {
-	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json", st.Name, b.Name, f.Name)
-
-	var gr GeolocationResponse
-
-	payload := newGeoFloorContainer(st, b, f, rm, delete)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// ListRooms ...
-func (s *GeolocationService) ListRooms(ctx context.Context, st Site, b Building, f Floor) ([]*Room, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s.json?query-target=children&target-subtree-class=geoRow",
-		st.Name, b.Name, f.Name,
-	)
-
-	req, err := s.client.NewRequest(http.MethodGet, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("list rooms: %v", err)
-	}
-
-	// structure of expected response
-	var gr struct {
-		Imdata []GeoRoomContainer `json:"imdata"`
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return nil, fmt.Errorf("list rooms: %v", err)
-	}
-
-	var rooms []*Room
-
-	for _, room := range gr.Imdata {
-		rooms = append(rooms, &Room{
-			Name:        room.Name,
-			Description: room.Descr,
-		})
-	}
-
-	return rooms, nil
-}
-
-// AddRow ...
-func (s *GeolocationService) AddRow(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row) (GeolocationResponse, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json",
-		st.Name, b.Name, f.Name, rm.Name, rw.Name,
-	)
-
-	var gr GeolocationResponse
-
-	payload := newGeoRowContainer(st, b, f, rm, rw, Rack{}, createModify)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// DeleteRow ...
-func (s *GeolocationService) DeleteRow(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row) (GeolocationResponse, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json",
-		st.Name, b.Name, f.Name, rm.Name,
-	)
-
-	var gr GeolocationResponse
-
-	payload := newGeoRoomContainer(st, b, f, rm, rw, delete)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// ListRows ...
-func (s *GeolocationService) ListRows(ctx context.Context, st Site, b Building, f Floor, rm Room) ([]*Row, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s.json?query-target=children&target-subtree-class=geoRow",
-		st.Name, b.Name, f.Name, rm.Name,
-	)
-
-	req, err := s.client.NewRequest(http.MethodGet, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("list rows: %v", err)
-	}
-
-	// structure of expected response
-	var gr struct {
-		Imdata []GeoRowContainer `json:"imdata"`
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return nil, fmt.Errorf("list rows: %v", err)
-	}
-
-	var rows []*Row
-
-	for _, row := range gr.Imdata {
-		rows = append(rows, &Row{
-			Name:        row.Name,
-			Description: row.Descr,
-		})
-	}
-
-	return rows, nil
-}
-
-// AddRack ...
-func (s *GeolocationService) AddRack(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row, rk Rack) (GeolocationResponse, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s.json",
-		st.Name, b.Name, f.Name, rm.Name, rw.Name, rk.Name,
-	)
-
-	var gr GeolocationResponse
-
-	payload := newGeoRackContainer(st, b, f, rm, rw, rk, createModify)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// DeleteRack ...
-func (s *GeolocationService) DeleteRack(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row, rk Rack) (GeolocationResponse, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json",
-		st.Name, b.Name, f.Name, rm.Name, rw.Name,
-	)
-
-	var gr GeolocationResponse
-
-	payload := newGeoRowContainer(st, b, f, rm, rw, rk, delete)
-
-	req, err := s.client.NewRequest(http.MethodPost, path, payload)
-	if err != nil {
-		return gr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return gr, err
-	}
-
-	return gr, nil
-}
-
-// ListRacks ...
-func (s *GeolocationService) ListRacks(ctx context.Context, st Site, b Building, f Floor, rm Room, rw Row) ([]*Rack, error) {
-	path := fmt.Sprintf(
-		"api/node/mo/uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s.json?query-target=children&target-subtree-class=geoRack",
-		st.Name, b.Name, f.Name, rm.Name, rw.Name,
-	)
-
-	req, err := s.client.NewRequest(http.MethodGet, path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("list racks: %v", err)
-	}
-
-	// structure of expected response
-	var gr struct {
-		Imdata []GeoRackContainer `json:"imdata"`
-	}
-
-	_, err = s.client.Do(ctx, req, &gr)
-	if err != nil {
-		return nil, fmt.Errorf("list racks: %v", err)
-	}
-
-	var racks []*Rack
-
-	for _, rack := range gr.Imdata {
-		racks = append(racks, &Rack{
-			Name:        rack.Name,
-			Description: rack.Descr,
-		})
-	}
-
-	return racks, nil
-}
+//
+// // AddSite ...
+// func (s *GeolocationService) AddSite(ctx context.Context, st Site) (GeolocationResponse, error) {
+//         path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", st.Name)
+//
+//         var gr GeolocationResponse
+//
+//         payload := newGeoSiteContainer(st, Building{}, createModify)
+//
+//         req, err := s.client.NewRequest(http.MethodPost, path, payload)
+//         if err != nil {
+//                 return gr, err
+//         }
+//
+//         _, err = s.client.Do(ctx, req, &gr)
+//         if err != nil {
+//                 return gr, err
+//         }
+//
+//         return gr, nil
+// }
