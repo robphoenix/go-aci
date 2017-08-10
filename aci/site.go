@@ -129,12 +129,12 @@ func (site *Site) Buildings() []*Building {
 }
 
 // AddBuilding ...
-func (site *Site) AddBuilding(building Building) {
+func (site *Site) AddBuilding(building *Building) {
 	site.addLocation(building.location)
 }
 
 // DeleteBuilding ...
-func (site *Site) DeleteBuilding(building Building) {
+func (site *Site) DeleteBuilding(building *Building) {
 	site.deleteLocation(building.location)
 }
 
@@ -169,12 +169,12 @@ func (building *Building) Floors() []*Floor {
 }
 
 // AddFloor ...
-func (building *Building) AddFloor(floor Floor) {
+func (building *Building) AddFloor(floor *Floor) {
 	building.addLocation(floor.location)
 }
 
 // DeleteFloor ...
-func (building *Building) DeleteFloor(floor Floor) {
+func (building *Building) DeleteFloor(floor *Floor) {
 	building.deleteLocation(floor.location)
 }
 
@@ -209,12 +209,12 @@ func (floor *Floor) Rooms() []*Room {
 }
 
 // AddRoom ...
-func (floor *Floor) AddRoom(room Room) {
+func (floor *Floor) AddRoom(room *Room) {
 	floor.addLocation(room.location)
 }
 
 // DeleteRoom ...
-func (floor *Floor) DeleteRoom(room Room) {
+func (floor *Floor) DeleteRoom(room *Room) {
 	floor.deleteLocation(room.location)
 }
 
@@ -249,12 +249,12 @@ func (room *Room) Rows() []*Row {
 }
 
 // AddRow ...
-func (room *Room) AddRow(row Row) {
+func (room *Room) AddRow(row *Row) {
 	room.addLocation(row.location)
 }
 
 // DeleteRow ...
-func (room *Room) DeleteRow(row Row) {
+func (room *Room) DeleteRow(row *Row) {
 	room.deleteLocation(row.location)
 }
 
@@ -289,12 +289,12 @@ func (row *Row) Racks() []*Rack {
 }
 
 // AddRack ...
-func (row *Row) AddRack(rack Rack) {
+func (row *Row) AddRack(rack *Rack) {
 	row.addLocation(rack.location)
 }
 
 // DeleteRack ...
-func (row *Row) DeleteRack(rack Rack) {
+func (row *Row) DeleteRack(rack *Rack) {
 	row.deleteLocation(rack.location)
 }
 
