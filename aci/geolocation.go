@@ -22,6 +22,30 @@ type GeoSiteContainer struct {
 	GeoSite `json:"geoSite,omitempty"`
 }
 
+func newGeoSiteContainer(site *Site) GeoSiteContainer {
+	var geoSite GeoSiteContainer
+	geoSite.Name = site.Name()
+	geoSite.Descr = site.Description()
+	geoSite.DN = fmt.Sprintf("uni/fabric/site-%s", site.Name())
+	geoSite.RN = fmt.Sprintf("site-%s", site.Name())
+	geoSite.Status = site.Status()
+
+	buildings := site.Buildings()
+	if len(buildings) == 0 {
+		return geoSite
+	}
+
+	var geoBuildings []GeoBuildingContainer
+	for _, building := range buildings {
+		geoBuilding := newGeoBuildingContainer(site.Name(), building)
+		geoBuildings = append(geoBuildings, geoBuilding)
+	}
+
+	geoSite.GeoBuildings = geoBuildings
+
+	return geoSite
+}
+
 // GeoSite ...
 type GeoSite struct {
 	GeoAttrs     `json:"attributes,omitempty"`
@@ -31,6 +55,30 @@ type GeoSite struct {
 // GeoBuildingContainer ...
 type GeoBuildingContainer struct {
 	GeoBuilding `json:"geoBuilding,omitempty"`
+}
+
+func newGeoBuildingContainer(site string, building *Building) GeoBuildingContainer {
+	var geoBuilding GeoBuildingContainer
+	geoBuilding.Name = building.Name()
+	geoBuilding.Descr = building.Description()
+	geoBuilding.DN = fmt.Sprintf("uni/fabric/site-%s/building-%s", site, building.Name())
+	geoBuilding.RN = fmt.Sprintf("building-%s", building.Name())
+	geoBuilding.Status = building.Status()
+
+	floors := building.Floors()
+	if len(floors) == 0 {
+		return geoBuilding
+	}
+
+	var geoFloors []GeoFloorContainer
+	for _, floor := range floors {
+		geoFloor := newGeoFloorContainer(site, building.Name(), floor)
+		geoFloors = append(geoFloors, geoFloor)
+	}
+
+	geoBuilding.GeoFloors = geoFloors
+
+	return geoBuilding
 }
 
 // GeoBuilding ...
@@ -44,6 +92,30 @@ type GeoFloorContainer struct {
 	GeoFloor `json:"geoFloor,omitempty"`
 }
 
+func newGeoFloorContainer(site, building string, floor *Floor) GeoFloorContainer {
+	var geoFloor GeoFloorContainer
+	geoFloor.Name = floor.Name()
+	geoFloor.Descr = floor.Description()
+	geoFloor.DN = fmt.Sprintf("uni/fabric/site-%s/building-%s/floor-%s", site, building, floor.Name())
+	geoFloor.RN = fmt.Sprintf("floor-%s", floor.Name())
+	geoFloor.Status = floor.Status()
+
+	rooms := floor.Rooms()
+	if len(rooms) == 0 {
+		return geoFloor
+	}
+
+	var geoRooms []GeoRoomContainer
+	for _, room := range rooms {
+		geoRoom := newGeoRoomContainer(site, building, floor.Name(), room)
+		geoRooms = append(geoRooms, geoRoom)
+	}
+
+	geoFloor.GeoRooms = geoRooms
+
+	return geoFloor
+}
+
 // GeoFloor ...
 type GeoFloor struct {
 	GeoAttrs `json:"attributes,omitempty"`
@@ -53,6 +125,30 @@ type GeoFloor struct {
 // GeoRoomContainer ...
 type GeoRoomContainer struct {
 	GeoRoom `json:"geoRoom,omitempty"`
+}
+
+func newGeoRoomContainer(site, building, floor string, room *Room) GeoRoomContainer {
+	var geoRoom GeoRoomContainer
+	geoRoom.Name = room.Name()
+	geoRoom.Descr = room.Description()
+	geoRoom.DN = fmt.Sprintf("uni/fabric/site-%s/building-%s/floor-%s/room-%s", site, building, floor, room.Name())
+	geoRoom.RN = fmt.Sprintf("room-%s", room.Name())
+	geoRoom.Status = room.Status()
+
+	rows := room.Rows()
+	if len(rows) == 0 {
+		return geoRoom
+	}
+
+	var geoRows []GeoRowContainer
+	for _, row := range rows {
+		geoRow := newGeoRowContainer(site, building, floor, room.Name(), row)
+		geoRows = append(geoRows, geoRow)
+	}
+
+	geoRoom.GeoRows = geoRows
+
+	return geoRoom
 }
 
 // GeoRoom ...
@@ -66,6 +162,30 @@ type GeoRowContainer struct {
 	GeoRow `json:"geoRow,omitempty"`
 }
 
+func newGeoRowContainer(site, building, floor, room string, row *Row) GeoRowContainer {
+	var geoRow GeoRowContainer
+	geoRow.Name = row.Name()
+	geoRow.Descr = row.Description()
+	geoRow.DN = fmt.Sprintf("uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s", site, building, floor, room, row.Name())
+	geoRow.RN = fmt.Sprintf("row-%s", row.Name())
+	geoRow.Status = row.Status()
+
+	racks := row.Racks()
+	if len(racks) == 0 {
+		return geoRow
+	}
+
+	var geoRacks []GeoRackContainer
+	for _, rack := range racks {
+		geoRack := newGeoRackContainer(site, building, floor, room, row.Name(), rack)
+		geoRacks = append(geoRacks, geoRack)
+	}
+
+	geoRow.GeoRacks = geoRacks
+
+	return geoRow
+}
+
 // GeoRow ...
 type GeoRow struct {
 	GeoAttrs `json:"attributes,omitempty"`
@@ -77,6 +197,17 @@ type GeoRackContainer struct {
 	GeoRack `json:"geoRack,omitempty"`
 }
 
+func newGeoRackContainer(site, building, floor, room, row string, rack *Rack) GeoRackContainer {
+	var geoRack GeoRackContainer
+	geoRack.Name = rack.Name()
+	geoRack.Descr = rack.Description()
+	geoRack.DN = fmt.Sprintf("uni/fabric/site-%s/building-%s/floor-%s/room-%s/row-%s/rack-%s", site, building, floor, room, row, rack.Name())
+	geoRack.RN = fmt.Sprintf("rack-%s", rack.Name())
+	geoRack.Status = rack.Status()
+
+	return geoRack
+}
+
 // GeoRack ...
 type GeoRack struct {
 	GeoAttrs `json:"attributes,omitempty"`
@@ -86,9 +217,9 @@ type GeoRack struct {
 // GeoAttrs ...
 type GeoAttrs struct {
 	Descr  string `json:"descr,omitempty"`
-	Dn     string `json:"dn,omitempty"`
+	DN     string `json:"dn,omitempty"`
 	Name   string `json:"name,omitempty"`
-	Rn     string `json:"rn,omitempty"`
+	RN     string `json:"rn,omitempty"`
 	Status string `json:"status,omitempty"`
 }
 
@@ -102,10 +233,21 @@ type GeolocationResponse struct {
 // methods of the APIC API.
 type GeolocationService service
 
-// // UpdateSite ...
-// func (s *GeolocationService) UpdateSite(ctx context.Context, location *Site) (GeolocationResponse, error) {
-//
-// }
+// UpdateSite ...
+func (s *GeolocationService) UpdateSite(ctx context.Context, site *Site) (GeolocationResponse, error) {
+	path := fmt.Sprintf("api/node/mo/uni/fabric/site-%s.json", site.Name())
+	payload := newGeoSiteContainer(site)
+
+	var gr GeolocationResponse
+
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
+	if err != nil {
+		return gr, err
+	}
+
+	_, err = s.client.Do(ctx, req, &gr)
+	return gr, err
+}
 
 // ListSites ...
 func (s *GeolocationService) ListSites(ctx context.Context) ([]*Site, error) {

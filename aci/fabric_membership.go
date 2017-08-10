@@ -98,7 +98,7 @@ func (s *FabricMembershipService) NewNode(name, nodeID, podID, serial string) (*
 func (s *FabricMembershipService) Update(ctx context.Context, nodes ...Node) (NodesResponse, error) {
 
 	path := "api/node/mo/uni/controller/nodeidentpol.json"
-	payload := buildUpdatePayload(nodes)
+	payload := newNodeIdentProfContainer(nodes)
 
 	var nr NodesResponse
 
@@ -111,7 +111,7 @@ func (s *FabricMembershipService) Update(ctx context.Context, nodes ...Node) (No
 	return nr, err
 }
 
-func buildUpdatePayload(nodes []Node) NodeIdentProfContainer {
+func newNodeIdentProfContainer(nodes []Node) NodeIdentProfContainer {
 
 	var children []FabricNodeContainer
 
