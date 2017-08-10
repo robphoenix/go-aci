@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 // Node is an ACI fabric membership node
@@ -44,16 +43,12 @@ func (n *Node) Name() string {
 
 // SetName validates and sets the node name.
 //
-// A node name can be no longer than 64 characters
-// and can contain only letters, numbers, hyphen
-// and underscore. It cannot end with a hyphen or
-// underscore character
+// A node name can be up to 64 characters and can only contain
+// alphanumeric, hyphen and underscore characters. It must begin
+// and end with an alphanumeric character.
 func (n *Node) SetName(name string) error {
-	valid := regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
+	valid := regexp.MustCompile(`(^[a-zA-Z0-9]{1,2}$|^[a-zA-Z0-9][a-zA-Z0-9_-]{0,62}[a-zA-Z0-9]$)`)
 	if !valid.MatchString(name) {
-		return fmt.Errorf("invalid name: %s", name)
-	}
-	if strings.HasSuffix(name, "-") || strings.HasSuffix(name, "_") {
 		return fmt.Errorf("invalid name: %s", name)
 	}
 	n.name = name
