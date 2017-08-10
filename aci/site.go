@@ -103,22 +103,6 @@ type Site struct {
 	location
 }
 
-// NewSite instantiates a Site.
-func NewSite(name, description string) (*Site, error) {
-	site := Site{}
-	err := site.SetName(name)
-	if err != nil {
-		return &site, err
-	}
-	if description != "" {
-		err := site.SetDescription(description)
-		if err != nil {
-			return &site, err
-		}
-	}
-	return &site, nil
-}
-
 // Buildings ...
 func (site *Site) Buildings() []*Building {
 	var buildings []*Building
@@ -141,22 +125,6 @@ func (site *Site) DeleteBuilding(building *Building) {
 // Building ...
 type Building struct {
 	location
-}
-
-// NewBuilding instantiates a Building.
-func NewBuilding(name, description string) (*Building, error) {
-	building := Building{}
-	err := building.SetName(name)
-	if err != nil {
-		return &building, err
-	}
-	if description != "" {
-		err := building.SetDescription(description)
-		if err != nil {
-			return &building, err
-		}
-	}
-	return &building, nil
 }
 
 // Floors ...
@@ -183,22 +151,6 @@ type Floor struct {
 	location
 }
 
-// NewFloor instantiates a Floor.
-func NewFloor(name, description string) (*Floor, error) {
-	floor := Floor{}
-	err := floor.SetName(name)
-	if err != nil {
-		return &floor, err
-	}
-	if description != "" {
-		err := floor.SetDescription(description)
-		if err != nil {
-			return &floor, err
-		}
-	}
-	return &floor, nil
-}
-
 // Rooms ...
 func (floor *Floor) Rooms() []*Room {
 	var rooms []*Room
@@ -221,22 +173,6 @@ func (floor *Floor) DeleteRoom(room *Room) {
 // Room ...
 type Room struct {
 	location
-}
-
-// NewRoom instantiates a Room.
-func NewRoom(name, description string) (*Room, error) {
-	room := Room{}
-	err := room.SetName(name)
-	if err != nil {
-		return &room, err
-	}
-	if description != "" {
-		err := room.SetDescription(description)
-		if err != nil {
-			return &room, err
-		}
-	}
-	return &room, nil
 }
 
 // Rows ...
@@ -263,22 +199,6 @@ type Row struct {
 	location
 }
 
-// NewRow instantiates a Row.
-func NewRow(name, description string) (*Row, error) {
-	row := Row{}
-	err := row.SetName(name)
-	if err != nil {
-		return &row, err
-	}
-	if description != "" {
-		err := row.SetDescription(description)
-		if err != nil {
-			return &row, err
-		}
-	}
-	return &row, nil
-}
-
 // Racks ...
 func (row *Row) Racks() []*Rack {
 	var racks []*Rack
@@ -301,20 +221,4 @@ func (row *Row) DeleteRack(rack *Rack) {
 // Rack ...
 type Rack struct {
 	location
-}
-
-// NewRack instantiates a Rack.
-func NewRack(name, description string) (*Rack, error) {
-	rack := Rack{}
-	err := rack.SetName(name)
-	if err != nil {
-		return &rack, err
-	}
-	if description != "" {
-		err := rack.SetDescription(description)
-		if err != nil {
-			return &rack, err
-		}
-	}
-	return &rack, nil
 }
