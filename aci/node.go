@@ -49,7 +49,7 @@ func (n *Node) Name() string {
 // and underscore. It cannot end with a hyphen or
 // underscore character
 func (n *Node) SetName(name string) error {
-	valid := regexp.MustCompile(`^[a-zA-Z0-9_-]{0,64}$`)
+	valid := regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
 	if !valid.MatchString(name) {
 		return fmt.Errorf("invalid name: %s", name)
 	}
@@ -75,7 +75,7 @@ func (n *Node) SetPod(id string) error {
 	if err != nil {
 		return fmt.Errorf("invalid pod id: %s", id)
 	}
-	if idN < 0 || idN > 255 {
+	if idN < 1 || idN > 255 {
 		return fmt.Errorf("invalid pod id: %s", id)
 	}
 	n.podID = id
@@ -92,7 +92,7 @@ func (n *Node) Serial() string {
 // A valid serial number has a maximum length of 16
 // and contains only letters and numbers.
 func (n *Node) SetSerial(serial string) error {
-	valid := regexp.MustCompile(`^[a-zA-Z0-9]{0,16}$`)
+	valid := regexp.MustCompile(`^[a-zA-Z0-9]{1,16}$`)
 	if !valid.MatchString(serial) {
 		return fmt.Errorf("invalid serial number: %s", serial)
 	}
