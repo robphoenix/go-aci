@@ -76,18 +76,19 @@ type FabricMembershipService service
 func (s *FabricMembershipService) NewNode(name, nodeID, podID, serial string) (*Node, error) {
 	node := &Node{}
 
-	err := node.SetID(nodeID)
-	if err != nil {
+	if err := node.SetName(name); err != nil {
 		return node, err
 	}
 
-	err = node.SetSerial(serial)
-	if err != nil {
+	if err := node.SetID(nodeID); err != nil {
 		return node, err
 	}
 
-	err = node.SetPod(podID)
-	if err != nil {
+	if err := node.SetSerial(serial); err != nil {
+		return node, err
+	}
+
+	if err := node.SetPod(podID); err != nil {
 		return node, err
 	}
 
@@ -95,7 +96,7 @@ func (s *FabricMembershipService) NewNode(name, nodeID, podID, serial string) (*
 }
 
 // Update ...
-func (s *FabricMembershipService) Update(ctx context.Context, nodes ...Node) (NodesResponse, error) {
+func (s *FabricMembershipService) Update(ctx context.Context, nodes ...*Node) (NodesResponse, error) {
 
 	path := "api/node/mo/uni/controller/nodeidentpol.json"
 	payload := newNodeIdentProfContainer(nodes)
@@ -111,7 +112,7 @@ func (s *FabricMembershipService) Update(ctx context.Context, nodes ...Node) (No
 	return nr, err
 }
 
-func newNodeIdentProfContainer(nodes []Node) NodeIdentProfContainer {
+func newNodeIdentProfContainer(nodes []*Node) NodeIdentProfContainer {
 
 	var children []FabricNodeContainer
 

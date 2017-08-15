@@ -367,32 +367,32 @@ func (s *GeolocationService) ListSites(ctx context.Context) ([]*Site, error) {
 	var sites []*Site
 
 	for _, siteLocation := range gs.Imdata {
-		site, err := NewSite(siteLocation.Name, siteLocation.Descr)
+		site, err := s.NewSite(siteLocation.Name, siteLocation.Descr)
 		if err != nil {
 			return sites, err
 		}
 		for _, buildingLocation := range siteLocation.GeoBuildings {
-			building, err := NewBuilding(buildingLocation.Name, buildingLocation.Descr)
+			building, err := s.NewBuilding(buildingLocation.Name, buildingLocation.Descr)
 			if err != nil {
 				return sites, err
 			}
 			for _, floorLocation := range buildingLocation.GeoFloors {
-				floor, err := NewFloor(floorLocation.Name, floorLocation.Descr)
+				floor, err := s.NewFloor(floorLocation.Name, floorLocation.Descr)
 				if err != nil {
 					return sites, err
 				}
 				for _, roomLocation := range floorLocation.GeoRooms {
-					room, err := NewRoom(roomLocation.Name, roomLocation.Descr)
+					room, err := s.NewRoom(roomLocation.Name, roomLocation.Descr)
 					if err != nil {
 						return sites, err
 					}
 					for _, rowLocation := range roomLocation.GeoRows {
-						row, err := NewRow(rowLocation.Name, rowLocation.Descr)
+						row, err := s.NewRow(rowLocation.Name, rowLocation.Descr)
 						if err != nil {
 							return sites, err
 						}
 						for _, rackLocation := range rowLocation.GeoRacks {
-							rack, err := NewRack(rackLocation.Name, rackLocation.Descr)
+							rack, err := s.NewRack(rackLocation.Name, rackLocation.Descr)
 							if err != nil {
 								return sites, err
 							}
