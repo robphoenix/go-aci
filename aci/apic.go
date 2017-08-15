@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	createModify = "created,modified"
-	delete       = "deleted"
-	create       = "created"
-	modify       = "modified"
-	loginPath    = "api/aaaLogin.json"
+	createdModified = "created,modified"
+	deleted         = "deleted"
+	created         = "created"
+	modified        = "modified"
+	loginPath       = "api/aaaLogin.json"
 	// ErrAlreadyDiscovered - Can't remove node identity policy - Node TEP-1-102 is already discovered. Please decommission first.
 	ErrAlreadyDiscovered = "107"
 )

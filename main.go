@@ -30,10 +30,10 @@ func main() {
 		return
 	}
 
-	// create node
-	node, err := client.FabricMembership.NewNode(
-		"leaf-101",    // name
-		"101",         // id
+	// define nodes
+	node401, err := client.FabricMembership.NewNode(
+		"leaf-401",    // name
+		"401",         // id
 		"1",           // pod id
 		"FOC0849N1BD", // serial number
 	)
@@ -42,8 +42,30 @@ func main() {
 		return
 	}
 
-	// add node
-	resp, err := client.FabricMembership.AddNode(ctx, node)
+	node402, err := client.FabricMembership.NewNode(
+		"leaf-402",    // name
+		"402",         // id
+		"1",           // pod id
+		"FOC0456N2BC", // serial number
+	)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	// mark node for creation
+	node401.SetCreated()
+
+	// mark node for deletion
+	node402.SetDeleted()
+
+	nodes := []*aci.Node{
+		node401,
+		node402,
+	}
+
+	// update ACI Fabric Membership
+	resp, err := client.FabricMembership.Update(ctx, nodes...)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -51,17 +73,22 @@ func main() {
 
 	fmt.Printf("resp = %+v\n", resp)
 
-	// // delete node
-	// resp, err = client.FabricMembership.DeleteNode(ctx, node)
-	// if err != nil {
-	//         log.Fatal(err)
-	//         return
-	// }
-	//
-	// fmt.Printf("resp = %+v\n", resp)
+	// see a nodes current status (defaults to create)
+	status401 := node401.Status()
+	fmt.Println(status401) // Output: "created"
+	status402 := node402.Status()
+	fmt.Println(status402) // Output: "deleted"
+
+	node402.SetCreated()
+
+	resp, err = client.FabricMembership.Update(ctx, node402)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	// list nodes
-	nodes, err := client.FabricMembership.ListNodes(ctx)
+	nodes, err = client.FabricMembership.List(ctx)
 	if err != nil {
 		log.Fatal(err)
 		return

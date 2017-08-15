@@ -4,59 +4,47 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
-	"strconv"
-	"time"
 )
-
-// Node is an ACI fabric membership node
-type Node struct {
-	ID     string
-	Name   string
-	PodID  string
-	Serial string
-}
-
-// String returns the string representation of an ACI node
-func (n *Node) String() string {
-	return fmt.Sprintf("%s %s %s", n.Name, n.ID, n.Serial)
-}
 
 // NodesResponse contains the response for ACI fabric nodes requests
 type NodesResponse struct {
 	NodesImdata []NodesImdata `json:"imdata"`
 }
 
-// NodesImdata describes the node in the nodes response structure
+// NodesImdata contains the node in the nodes response structure
 type NodesImdata struct {
 	FabricNode `json:"fabricNode"`
 }
 
 // FabricNode is the node identity profile
 type FabricNode struct {
-	*NodeIdentProfAttributes `json:"attributes"`
+	NodeResponseAttrs `json:"attributes"`
 }
 
-// NodeIdentProfAttributes contains all the attributes of an ACI fabric node API response
-type NodeIdentProfAttributes struct {
-	AdSt             string    `json:"adSt,omitempty"`
-	ChildAction      string    `json:"childAction,omitempty"`
-	DelayedHeartbeat string    `json:"delayedHeartbeat,omitempty"`
-	DN               string    `json:"dn,omitempty"`
-	FabricSt         string    `json:"fabricSt,omitempty"`
-	ID               string    `json:"id,omitempty"`
-	LcOwn            string    `json:"lcOwn,omitempty"`
-	ModTs            time.Time `json:"modTs,omitempty"`
-	Model            string    `json:"model,omitempty"`
-	MonPolDn         string    `json:"monPolDn,omitempty"`
-	Name             string    `json:"name,omitempty"`
-	NameAlias        string    `json:"nameAlias,omitempty"`
-	Role             string    `json:"role,omitempty"`
-	Serial           string    `json:"serial,omitempty"`
-	Status           string    `json:"status,omitempty"`
-	UID              string    `json:"uid,omitempty"`
-	Vendor           string    `json:"vendor,omitempty"`
-	Version          string    `json:"version,omitempty"`
+// NodeIdentProfContainer is a container for a NodeIdentityProfile
+type NodeIdentProfContainer struct {
+	NodeIdentityProfile `json:"fabricNodeIdentPol"`
+}
+
+// NodeIdentityProfile describes the node identity profile
+type NodeIdentityProfile struct {
+	NodeResponseAttrs `json:"attributes"`
+	Children          []FabricNodeContainer `json:"children"`
+}
+
+// NodeResponseAttrs contains all the attributes of an ACI fabric node API response
+type NodeResponseAttrs struct {
+	DN       string `json:"dn,omitempty"`
+	FabricSt string `json:"fabricSt,omitempty"`
+	ID       string `json:"id,omitempty"`
+	Model    string `json:"model,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Role     string `json:"role,omitempty"`
+	Serial   string `json:"serial,omitempty"`
+	Status   string `json:"status,omitempty"`
+	UID      string `json:"uid,omitempty"`
+	Vendor   string `json:"vendor,omitempty"`
+	Version  string `json:"version,omitempty"`
 }
 
 // FabricNodeContainer is a container for a Fabric Node Identity Profile
@@ -64,31 +52,13 @@ type FabricNodeContainer struct {
 	FabricNodeIdentP `json:"fabricNodeIdentP"`
 }
 
-// newFabricNodeContainer instantiates a FabricNodeContainer
-func newFabricNodeContainer(n *Node, action string) *FabricNodeContainer {
-	rn := fmt.Sprintf("nodep-%s", n.Serial)
-	dn := fmt.Sprintf("uni/controller/nodeidentpol/%s", rn)
-	return &FabricNodeContainer{
-		FabricNodeIdentP: FabricNodeIdentP{
-			FabricNodeIdentPAttributes: &FabricNodeIdentPAttributes{
-				Status: action,
-				DN:     dn,
-				RN:     rn,
-				Name:   n.Name,
-				NodeID: n.ID,
-				Serial: n.Serial,
-			},
-		},
-	}
-}
-
 // FabricNodeIdentP is the node identity profile
 type FabricNodeIdentP struct {
-	*FabricNodeIdentPAttributes `json:"attributes"`
+	NodeRequestAttrs `json:"attributes"`
 }
 
-// FabricNodeIdentPAttributes contains all the attributes of an ACI fabric node API request
-type FabricNodeIdentPAttributes struct {
+// NodeRequestAttrs contains all the attributes of an ACI fabric node API request
+type NodeRequestAttrs struct {
 	DN     string `json:"dn,omitempty"`
 	Serial string `json:"serial,omitempty"`
 	NodeID string `json:"nodeId,omitempty"`
@@ -104,78 +74,78 @@ type FabricMembershipService service
 
 // NewNode instanstatiates a valid ACI fabric membership node
 func (s *FabricMembershipService) NewNode(name, nodeID, podID, serial string) (*Node, error) {
-	// A valid serial number has a maximum length of 16
-	// and contains only letters and numbers
-	validSerial := regexp.MustCompile(`^[a-zA-Z0-9]{0,16}$`)
-	if !validSerial.MatchString(serial) {
-		return nil, fmt.Errorf("invalid serial number: %s can only contain letters and numbers and have a max length of 16", serial)
+	node := &Node{}
+
+	if err := node.SetName(name); err != nil {
+		return node, err
 	}
-	// Node ID must be between 101 and 4000
-	n, err := strconv.Atoi(nodeID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid node id: %s %v", nodeID, err)
+
+	if err := node.SetID(nodeID); err != nil {
+		return node, err
 	}
-	if n < 101 || n > 4000 {
-		return nil, fmt.Errorf("out of range: %d node id must be between 101 & 4000", n)
+
+	if err := node.SetSerial(serial); err != nil {
+		return node, err
 	}
-	// Pod ID must be between 0 and 255
-	p, err := strconv.Atoi(podID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid pod id: %s %v", podID, err)
+
+	if err := node.SetPod(podID); err != nil {
+		return node, err
 	}
-	if p < 0 || p > 255 {
-		return nil, fmt.Errorf("out of range: %d pod id must be between 0 & 255", p)
-	}
-	return &Node{
-		Name:   name,
-		ID:     nodeID,
-		PodID:  podID,
-		Serial: serial,
-	}, nil
+
+	return node, nil
 }
 
-// AddNode adds a single node to the ACI fabric membership
-func (s *FabricMembershipService) AddNode(ctx context.Context, n *Node) (NodesResponse, error) {
-
-	path := fmt.Sprintf("api/node/mo/uni/controller/nodeidentpol/nodep-%s.json", n.Serial)
-
-	var nr NodesResponse
-
-	req, err := s.client.NewRequest(http.MethodPost, path, newFabricNodeContainer(n, createModify))
-	if err != nil {
-		return nr, err
-	}
-
-	_, err = s.client.Do(ctx, req, &nr)
-	if err != nil {
-		return nr, err
-	}
-
-	return nr, nil
-}
-
-// DeleteNode deletes a fabric membership node
-func (s *FabricMembershipService) DeleteNode(ctx context.Context, n *Node) (NodesResponse, error) {
+// Update ...
+func (s *FabricMembershipService) Update(ctx context.Context, nodes ...*Node) (NodesResponse, error) {
 
 	path := "api/node/mo/uni/controller/nodeidentpol.json"
+	payload := newNodeIdentProfContainer(nodes)
 
 	var nr NodesResponse
 
-	req, err := s.client.NewRequest(http.MethodPost, path, newFabricNodeContainer(n, delete))
+	req, err := s.client.NewRequest(http.MethodPost, path, payload)
 	if err != nil {
 		return nr, err
 	}
 
 	_, err = s.client.Do(ctx, req, &nr)
-	if err != nil {
-		return nr, err
-	}
-
-	return nr, nil
+	return nr, err
 }
 
-// ListNodes lists all node members of the ACI fabric
-func (s *FabricMembershipService) ListNodes(ctx context.Context) ([]*Node, error) {
+func newNodeIdentProfContainer(nodes []*Node) NodeIdentProfContainer {
+
+	var children []FabricNodeContainer
+
+	for _, node := range nodes {
+		rn := fmt.Sprintf("nodep-%s", node.Serial())
+		dn := fmt.Sprintf("uni/controller/nodeidentpol/%s", rn)
+		child := FabricNodeContainer{
+			FabricNodeIdentP: FabricNodeIdentP{
+				NodeRequestAttrs: NodeRequestAttrs{
+					Status: node.Status(),
+					DN:     dn,
+					RN:     rn,
+					Name:   node.Name(),
+					NodeID: node.ID(),
+					Serial: node.Serial(),
+				},
+			},
+		}
+		children = append(children, child)
+	}
+
+	return NodeIdentProfContainer{
+		NodeIdentityProfile: NodeIdentityProfile{
+			NodeResponseAttrs: NodeResponseAttrs{
+				Status: createdModified,
+			},
+			Children: children,
+		},
+	}
+}
+
+// List lists all node members of the ACI fabric
+func (s *FabricMembershipService) List(ctx context.Context) ([]*Node, error) {
 
 	path := "api/node/class/fabricNode.json"
 
@@ -184,19 +154,20 @@ func (s *FabricMembershipService) ListNodes(ctx context.Context) ([]*Node, error
 
 	req, err := s.client.NewRequest(http.MethodGet, path, nil)
 	if err != nil {
-		return nil, fmt.Errorf("list nodes: %v", err)
+		return nil, fmt.Errorf("list: %v", err)
 	}
 
 	_, err = s.client.Do(ctx, req, &nr)
 	if err != nil {
-		return nil, fmt.Errorf("list nodes: %v", err)
+		return nil, fmt.Errorf("list: %v", err)
 	}
 
 	for _, n := range nr.NodesImdata {
 		ns = append(ns, &Node{
-			Name:   n.Name,
-			ID:     n.ID,
-			Serial: n.Serial,
+			name:   n.Name,
+			id:     n.ID,
+			serial: n.Serial,
+			status: n.Status,
 		})
 	}
 	return ns, nil
@@ -225,12 +196,12 @@ func (s *FabricMembershipService) DecommissionNode(ctx context.Context, node *No
 
 	path := "api/node/mo/uni/fabric/outofsvc.json"
 
-	tdn := fmt.Sprintf("topology/pod-%s/node-%s", node.PodID, node.ID)
+	tdn := fmt.Sprintf("topology/pod-%s/node-%s", node.podID, node.id)
 	payload := NodeDecommissionContainer{
 		NodeDecommission: NodeDecommission{
 			DecommissionAttributes: DecommissionAttributes{
 				TDN:                  tdn,
-				Status:               createModify,
+				Status:               createdModified,
 				RemoveFromController: "true",
 			},
 		},
