@@ -10,8 +10,9 @@ import (
 type Node struct {
 	id     string
 	name   string
-	podID  string
+	pod    string
 	serial string
+	role   string
 	status string
 }
 
@@ -57,7 +58,7 @@ func (n *Node) SetName(name string) error {
 
 // Pod returns the id of the pod the node is attached to.
 func (n *Node) Pod() string {
-	return n.podID
+	return n.pod
 }
 
 // SetPod validates and sets the id of the pod the node
@@ -73,7 +74,7 @@ func (n *Node) SetPod(id string) error {
 	if idN < 1 || idN > 255 {
 		return fmt.Errorf("invalid pod id: %s", id)
 	}
-	n.podID = id
+	n.pod = id
 	return nil
 }
 
@@ -115,4 +116,19 @@ func (n *Node) Status() string {
 // String returns the string representation of an ACI node
 func (n *Node) String() string {
 	return fmt.Sprintf("%s %s %s", n.name, n.id, n.serial)
+}
+
+// SetRole sets the role of the node.
+// Can only be "leaf" or "spine"
+func (n *Node) SetRole(role string) error {
+	if role != "leaf" && role != "spine" {
+		return fmt.Errorf("invalid role: %s", role)
+	}
+	n.role = role
+	return nil
+}
+
+// Role returns the role of the node.
+func (n *Node) Role() string {
+	return n.role
 }

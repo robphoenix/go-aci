@@ -163,9 +163,13 @@ func (s *FabricMembershipService) List(ctx context.Context) ([]*Node, error) {
 	}
 
 	for _, n := range nr.NodesImdata {
+		// we shouldn't need to validate nodes
+		// returned by the APIC server, as APIC
+		// should have already done this.
 		ns = append(ns, &Node{
 			name:   n.Name,
 			id:     n.ID,
+			role:   n.Role,
 			serial: n.Serial,
 			status: n.Status,
 		})
@@ -186,7 +190,7 @@ type NodeDecommission struct {
 
 // DecommissionAttributes are the attributes of the node to be decomissioned
 type DecommissionAttributes struct {
-	TDN                  string `json:"tDn"`                  // "topology/pod-<podID>/node-<nodeID>"
+	TDN                  string `json:"tDn"`                  // "topology/pod-<pod>/node-<nodeID>"
 	Status               string `json:"status"`               // createModify
 	RemoveFromController string `json:"removeFromController"` // "true"
 }
@@ -196,7 +200,7 @@ func (s *FabricMembershipService) DecommissionNode(ctx context.Context, node *No
 
 	path := "api/node/mo/uni/fabric/outofsvc.json"
 
-	tdn := fmt.Sprintf("topology/pod-%s/node-%s", node.podID, node.id)
+	tdn := fmt.Sprintf("topology/pod-%s/node-%s", node.pod, node.id)
 	payload := NodeDecommissionContainer{
 		NodeDecommission: NodeDecommission{
 			DecommissionAttributes: DecommissionAttributes{
