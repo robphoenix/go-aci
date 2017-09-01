@@ -44,6 +44,7 @@ func main() {
 		"401",         // id
 		"1",           // pod id
 		"FOC0849N1BD", // serial number
+		"leaf",        // role
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -55,6 +56,7 @@ func main() {
 		"402",         // id
 		"1",           // pod id
 		"FOC0456N2BC", // serial number
+		"leaf",        // role
 	)
 	if err != nil {
 		log.Fatal(err)
