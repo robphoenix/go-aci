@@ -73,14 +73,14 @@ type NodeRequestAttrs struct {
 type FabricMembershipService service
 
 // NewNode instanstatiates a valid ACI fabric membership node
-func (s *FabricMembershipService) NewNode(name, nodeID, podID, serial string) (*Node, error) {
+func (s *FabricMembershipService) NewNode(name, ID, pod, serial, role string) (*Node, error) {
 	node := &Node{}
 
 	if err := node.SetName(name); err != nil {
 		return node, err
 	}
 
-	if err := node.SetID(nodeID); err != nil {
+	if err := node.SetID(ID); err != nil {
 		return node, err
 	}
 
@@ -88,7 +88,11 @@ func (s *FabricMembershipService) NewNode(name, nodeID, podID, serial string) (*
 		return node, err
 	}
 
-	if err := node.SetPod(podID); err != nil {
+	if err := node.SetPod(pod); err != nil {
+		return node, err
+	}
+
+	if err := node.SetRole(role); err != nil {
 		return node, err
 	}
 
