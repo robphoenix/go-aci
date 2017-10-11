@@ -132,3 +132,14 @@ func (n *Node) SetRole(role string) error {
 func (n *Node) Role() string {
 	return n.role
 }
+
+// Equal compares n & o and returns whether they are equal or not.
+func (n *Node) Equal(o *Node) bool {
+	if n == o {
+		return true
+	}
+	if n.id != o.id || n.name != o.name || n.serial != o.serial {
+		return false
+	}
+	return true
+}
